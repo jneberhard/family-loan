@@ -69,7 +69,13 @@ function daysUntil(isoDate: string) {
 }
 
 type Role = "parent" | "child";
-type Modal = "entry" | "edit" | "child" | "interest" | null;
+type Modal = "entry" | "edit" | "child" | "coparent" | "interest" | "rate" | "access" | "settings" | null;
+type FamilyAdmin = {
+  id: string;
+  name: string;
+  email: string;
+  isCurrent?: boolean;
+};
 
 const emptyChild: DemoChild = {
   id: "",
@@ -87,19 +93,33 @@ export function DemoDashboard({
   initialRole = "parent",
   demoMode = true,
   interestPostingDay = 5,
+  familyName = "Bennett Family",
+  viewerName = "James Bennett",
+  initialAdmins = [{
+    id: "demo-parent",
+    name: "James Bennett",
+    email: "james@demo.family",
+    isCurrent: true,
+  }],
 }: {
   initialChildren?: DemoChild[];
   initialRole?: Role;
   demoMode?: boolean;
   interestPostingDay?: number;
+  familyName?: string;
+  viewerName?: string;
+  initialAdmins?: FamilyAdmin[];
 }) {
   const [children, setChildren] = useState(initialChildren);
+  const [admins, setAdmins] = useState(initialAdmins);
   const [selectedId, setSelectedId] = useState(initialChildren[0]?.id ?? "");
   const [role, setRole] = useState<Role>(initialRole);
   const [modal, setModal] = useState<Modal>(null);
   const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LedgerItem | null>(null);
+  const [postingDay, setPostingDay] = useState(interestPostingDay);
+  const [workspaceName, setWorkspaceName] = useState(familyName);
 
   const selected = children.find((child) => child.id === selectedId) ?? children[0] ?? emptyChild;
   const ledgers = useMemo(
@@ -108,6 +128,18 @@ export function DemoDashboard({
   );
   const selectedLedger = ledgers.get(selected.id) ?? [];
   const selectedBalance = selectedLedger.at(-1)?.balance ?? 0;
+  const selectedPrincipal = selected.entries
+    .filter((entry) => entry.type === "Loan")
+    .reduce((sum, entry) => sum + entry.amount, 0);
+  const selectedPayments = Math.abs(
+    selected.entries
+      .filter((entry) => entry.type === "Payment")
+      .reduce((sum, entry) => sum + entry.amount, 0),
+  );
+  const repaymentPercent =
+    selectedPrincipal > 0
+      ? Math.min(100, Math.round((selectedPayments / selectedPrincipal) * 100))
+      : 0;
   const totalBalance = children.reduce(
     (sum, child) => sum + (ledgers.get(child.id)?.at(-1)?.balance ?? 0),
     0,
@@ -118,7 +150,7 @@ export function DemoDashboard({
     0,
   );
   const interestPeriod = useMemo(() => {
-    const periodEnd = nextPostingDate(interestPostingDay);
+    const periodEnd = nextPostingDate(postingDay);
     const eligible = selected.entries
       .filter((entry) => entry.date < periodEnd)
       .sort((a, b) => a.date.localeCompare(b.date));
@@ -129,7 +161,7 @@ export function DemoDashboard({
       periodEnd,
       calculation: calculateAprInterest(selected.entries, selected.rate, periodStart, periodEnd),
     };
-  }, [interestPostingDay, selected.entries, selected.rate]);
+  }, [postingDay, selected.entries, selected.rate]);
   function notify(message: string) {
     setToast(message);
     window.setTimeout(() => setToast(""), 2800);
@@ -288,6 +320,111 @@ export function DemoDashboard({
     notify(`${name} was added`);
   }
 
+  async function changeApr(formData: FormData) {
+    const apr = Number(formData.get("apr"));
+    const effectiveDate = String(formData.get("effectiveDate"));
+    let id = `rate-${Date.now()}`;
+    let currentApr = apr;
+    let description = `APR changed to ${apr.toFixed(3)}%`;
+
+    if (!demoMode) {
+      const response = await fetch(`/api/accounts/${selected.id}/rate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apr, effectiveDate }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to change the APR.");
+        return;
+      }
+      id = result.id;
+      currentApr = Number(result.currentApr);
+      description = result.description;
+    }
+
+    const rateEntry: LedgerItem = {
+      id,
+      date: effectiveDate,
+      type: "Rate change",
+      description,
+      amount: 0,
+      rate: apr,
+    };
+    setChildren((current) =>
+      current.map((child) => {
+        if (child.id !== selected.id) return child;
+        const sameDayRate = child.entries.find(
+          (entry) => entry.type === "Rate change" && entry.date === effectiveDate,
+        );
+        return {
+          ...child,
+          rate: currentApr,
+          entries: sameDayRate
+            ? child.entries.map((entry) =>
+                entry.id === sameDayRate.id ? { ...rateEntry, id: sameDayRate.id } : entry,
+              )
+            : [...child.entries, rateEntry],
+        };
+      }),
+    );
+    setModal(null);
+    notify(`${selected.name.split(" ")[0]}'s APR changes to ${apr.toFixed(3)}% on ${displayDate(effectiveDate)}`);
+  }
+
+  async function saveSettings(formData: FormData) {
+    let name = String(formData.get("familyName")).trim();
+    let day = Number(formData.get("postingDay"));
+
+    if (!demoMode) {
+      const response = await fetch("/api/family/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, interestPostingDay: day }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to save family settings.");
+        return;
+      }
+      name = result.name;
+      day = Number(result.interestPostingDay);
+    }
+
+    setWorkspaceName(name);
+    setPostingDay(day);
+    setModal(null);
+    notify("Family settings saved");
+  }
+
+  async function addCoParent(formData: FormData) {
+    const name = String(formData.get("name")).trim();
+    const email = String(formData.get("email")).trim().toLowerCase();
+    let id = `co-parent-${Date.now()}`;
+
+    if (!demoMode) {
+      const response = await fetch("/api/family/co-parents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          temporaryPassword: formData.get("temporaryPassword"),
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to add the co-parent.");
+        return;
+      }
+      id = result.id;
+    }
+
+    setAdmins((current) => [...current, { id, name, email }]);
+    setModal("access");
+    notify(`${name} now has full family administrator access`);
+  }
+
   async function postInterest() {
     let amount = interestPeriod.calculation.total;
     let description = `APR interest · ${interestPeriod.periodStart} to ${interestPeriod.periodEnd} · ${interestPeriod.calculation.segments.length} balance period${interestPeriod.calculation.segments.length === 1 ? "" : "s"}`;
@@ -366,10 +503,10 @@ export function DemoDashboard({
 
         <nav className="side-nav">
           <span className="side-label">Workspace</span>
-          <button className="active"><LayoutDashboard size={19} /> Overview</button>
-          <button><ReceiptText size={19} /> All transactions</button>
-          {role === "parent" && <button><Users size={19} /> Family access</button>}
-          <button><Settings size={19} /> Settings</button>
+          <button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setMobileNav(false); }}><LayoutDashboard size={19} /> Overview</button>
+          <button onClick={() => { document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" }); setMobileNav(false); }}><ReceiptText size={19} /> All transactions</button>
+          {role === "parent" && <button onClick={() => { setModal("access"); setMobileNav(false); }}><Users size={19} /> Family access</button>}
+          {role === "parent" && <button onClick={() => { setModal("settings"); setMobileNav(false); }}><Settings size={19} /> Settings</button>}
         </nav>
 
         <div className="sidebar-family">
@@ -396,8 +533,8 @@ export function DemoDashboard({
         </div>
 
         <div className="sidebar-account">
-          <div className="avatar">{role === "parent" ? "JB" : selected.initials}</div>
-          <span><strong>{role === "parent" ? "James Bennett" : selected.name}</strong><small>{role === "parent" ? "Family admin" : "Read-only member"}</small></span>
+          <div className="avatar">{role === "parent" ? viewerName.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() : selected.initials}</div>
+          <span><strong>{role === "parent" ? viewerName : selected.name}</strong><small>{role === "parent" ? "Family admin" : "Read-only member"}</small></span>
           <ChevronDown size={16} />
         </div>
       </aside>
@@ -406,8 +543,8 @@ export function DemoDashboard({
         <header className="app-header">
           <button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu /></button>
           <div>
-            <span className="breadcrumb">Bennett Family <b>/</b> {selected.name.split(" ")[0]}&apos;s loan</span>
-            <h1>{role === "parent" ? "Good morning, James" : `Hello, ${selected.name.split(" ")[0]}`}</h1>
+            <span className="breadcrumb">{workspaceName} <b>/</b> {selected.name.split(" ")[0]}&apos;s loan</span>
+            <h1>{role === "parent" ? `Good morning, ${viewerName.split(" ")[0]}` : `Hello, ${selected.name.split(" ")[0]}`}</h1>
           </div>
           <div className="header-actions">
             {demoMode && (
@@ -457,6 +594,7 @@ export function DemoDashboard({
             </div>
             <div className="account-actions">
               <button className="button button-soft" onClick={exportLedger}><Download size={17} /> Export</button>
+              {role === "parent" && <button className="button button-soft" onClick={() => setModal("rate")}><Settings size={17} /> Change APR</button>}
               {role === "parent" && <button className="button button-gold" onClick={() => setModal("interest")}><CircleDollarSign size={17} /> Calculate interest</button>}
             </div>
           </div>
@@ -508,14 +646,14 @@ export function DemoDashboard({
                           <span><strong>{entry.type}</strong><small>{entry.description}</small></span>
                         </td>
                         <td>{entry.rate ? `${entry.rate.toFixed(2)}%` : "—"}</td>
-                        <td className={entry.amount < 0 ? "payment-amount" : ""}>{entry.amount < 0 ? "−" : "+"}{money.format(Math.abs(entry.amount))}</td>
+                        <td className={entry.amount < 0 ? "payment-amount" : ""}>{entry.type === "Rate change" ? "Rate only" : <>{entry.amount < 0 ? "−" : "+"}{money.format(Math.abs(entry.amount))}</>}</td>
                         <td><strong>{money.format(entry.balance)}</strong></td>
                         {role === "parent" && (
                           <td>
-                            <div className="transaction-actions">
+                            {entry.type === "Rate change" ? <span className="rate-managed">APR control</span> : <div className="transaction-actions">
                               <button onClick={() => editEntry(entry)} aria-label={`Edit ${entry.description}`} title="Edit transaction"><Pencil size={14} /></button>
                               <button className="danger" onClick={() => removeEntry(entry)} aria-label={`Remove ${entry.description}`} title="Remove transaction"><Trash2 size={14} /></button>
-                            </div>
+                            </div>}
                           </td>
                         )}
                       </tr>
@@ -530,11 +668,11 @@ export function DemoDashboard({
             <aside className="dashboard-side">
               <article className="panel payment-progress">
                 <div className="panel-header"><div><h3>Loan snapshot</h3><p>Progress since opening</p></div></div>
-                <div className="ring" style={{ "--progress": "31%" } as React.CSSProperties}>
-                  <div><strong>31%</strong><span>repaid</span></div>
+                <div className="ring" style={{ "--progress": `${repaymentPercent}%` } as React.CSSProperties}>
+                  <div><strong>{repaymentPercent}%</strong><span>repaid</span></div>
                 </div>
-                <div className="snapshot-row"><span>Original principal</span><strong>{money.format(selected.entries.filter(e => e.type === "Loan").reduce((n, e) => n + e.amount, 0))}</strong></div>
-                <div className="snapshot-row"><span>Total payments</span><strong className="green">{money.format(Math.abs(selected.entries.filter(e => e.type === "Payment").reduce((n, e) => n + e.amount, 0)))}</strong></div>
+                <div className="snapshot-row"><span>Original principal</span><strong>{money.format(selectedPrincipal)}</strong></div>
+                <div className="snapshot-row"><span>Total payments</span><strong className="green">{money.format(selectedPayments)}</strong></div>
                 <div className="snapshot-row"><span>Interest posted</span><strong>{money.format(selected.entries.filter(e => e.type === "Interest").reduce((n, e) => n + e.amount, 0))}</strong></div>
               </article>
 
@@ -597,6 +735,71 @@ export function DemoDashboard({
             {!demoMode && <label>Temporary password<input name="temporaryPassword" type="password" minLength={12} placeholder="12+ characters" required /></label>}
             <div className="invite-note"><LockKeyhole size={16} /> The child will only see their own account and cannot make changes.</div>
             <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal(null)}>Cancel</button><button className="button button-primary">Create account</button></div>
+          </form>
+        </Modal>
+      )}
+
+      {modal === "rate" && (
+        <Modal title={`Change ${selected.name.split(" ")[0]}'s APR`} subtitle="Set a new annual percentage rate from a specific date forward." onClose={() => setModal(null)}>
+          <form action={changeApr} className="modal-form">
+            <div className="rate-preview">
+              <span>Current account APR</span>
+              <strong>{selected.rate.toFixed(3)}%</strong>
+            </div>
+            <div className="field-grid">
+              <label>New APR (%)<input name="apr" type="number" min="0" max="100" step="0.001" defaultValue={selected.rate} required /></label>
+              <label>Effective date<input name="effectiveDate" type="date" defaultValue={new Date().toLocaleDateString("en-CA")} max={new Date().toLocaleDateString("en-CA")} required /></label>
+            </div>
+            <div className="invite-note"><CalendarDays size={16} /> Existing history keeps its original rate. Every loan balance for this child uses the new APR beginning on the effective date.</div>
+            <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal(null)}>Cancel</button><button className="button button-primary">Apply APR change</button></div>
+          </form>
+        </Modal>
+      )}
+
+      {modal === "access" && (
+        <Modal title="Family access" subtitle="Manage full-access parents and read-only child accounts." onClose={() => setModal(null)}>
+          <div className="access-list">
+            <div className="access-section-title"><span>Family administrators</span><button onClick={() => setModal("coparent")}><UserPlus size={14} /> Add co-parent</button></div>
+            {admins.map((admin) => (
+              <div className="access-row admin-access" key={admin.id}>
+                <i>{admin.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</i>
+                <span><strong>{admin.name}{admin.isCurrent ? " (you)" : ""}</strong><small>{admin.email}</small></span>
+                <b><ShieldCheck size={13} /> Full access</b>
+              </div>
+            ))}
+            <div className="access-section-title child-access-title"><span>Child accounts</span></div>
+            {children.map((child) => (
+              <div className="access-row" key={child.id}>
+                <i style={{ background: `${child.accent}22`, color: child.accent }}>{child.initials}</i>
+                <span><strong>{child.name}</strong><small>{child.email}</small></span>
+                <b><LockKeyhole size={13} /> Read only</b>
+              </div>
+            ))}
+            {!children.length && <p className="empty-access">No child accounts have been created yet.</p>}
+          </div>
+          <div className="modal-actions"><button className="button button-soft" onClick={() => setModal(null)}>Close</button><button className="button button-primary" onClick={() => setModal("child")}><UserPlus size={16} /> Add child</button></div>
+        </Modal>
+      )}
+
+      {modal === "coparent" && (
+        <Modal title="Add a co-parent" subtitle="Create another family administrator with the same loan-management permissions." onClose={() => setModal("access")}>
+          <form action={addCoParent} className="modal-form">
+            <label>Full name<input name="name" placeholder="Morgan Bennett" required /></label>
+            <label>Email address<input name="email" type="email" placeholder="morgan@example.com" required /></label>
+            <label>Temporary password<input name="temporaryPassword" type="password" minLength={12} placeholder="12+ characters" required /></label>
+            <div className="invite-note"><ShieldCheck size={16} /> This co-parent can add, edit, and remove transactions, create child accounts, change APRs, post interest, and manage family settings.</div>
+            <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal("access")}>Back</button><button className="button button-primary">Create co-parent account</button></div>
+          </form>
+        </Modal>
+      )}
+
+      {modal === "settings" && (
+        <Modal title="Family settings" subtitle="Manage the workspace name and monthly interest posting schedule." onClose={() => setModal(null)}>
+          <form action={saveSettings} className="modal-form">
+            <label>Family workspace name<input name="familyName" defaultValue={workspaceName} required /></label>
+            <label>Monthly interest posting day<input name="postingDay" type="number" min="1" max="28" defaultValue={postingDay} required /><small className="field-help">Choose day 1 through 28 so every month has a valid posting date.</small></label>
+            <div className="invite-note"><ShieldCheck size={16} /> These controls are available only to family administrators.</div>
+            <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal(null)}>Cancel</button><button className="button button-primary">Save settings</button></div>
           </form>
         </Modal>
       )}

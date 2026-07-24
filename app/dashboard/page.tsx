@@ -12,9 +12,17 @@ export default async function DashboardPage() {
   if (session.role === "SUPER_USER") redirect("/super-admin");
 
   const family = session.familyId
-    ? await prisma.family.findUnique({
+      ? await prisma.family.findUnique({
         where: { id: session.familyId },
-        select: { interestPostingDay: true },
+        select: {
+          name: true,
+          interestPostingDay: true,
+          users: {
+            where: { role: "ADMIN" },
+            select: { id: true, name: true, email: true },
+            orderBy: { createdAt: "asc" },
+          },
+        },
       })
     : null;
 
@@ -37,7 +45,7 @@ export default async function DashboardPage() {
     entries: account.transactions.map((entry) => ({
       id: entry.id,
       date: entry.effectiveAt.toISOString().slice(0, 10),
-      type: entry.type === "LOAN" ? "Loan" : entry.type === "PAYMENT" ? "Payment" : entry.type === "INTEREST" ? "Interest" : "Adjustment",
+      type: entry.type === "LOAN" ? "Loan" : entry.type === "PAYMENT" ? "Payment" : entry.type === "INTEREST" ? "Interest" : entry.type === "RATE_CHANGE" ? "Rate change" : "Adjustment",
       description: entry.description,
       amount: Number(entry.amount),
       rate: entry.rate === null ? null : Number(entry.rate),
@@ -50,6 +58,12 @@ export default async function DashboardPage() {
       initialRole={session.role === "ADMIN" ? "parent" : "child"}
       demoMode={false}
       interestPostingDay={family?.interestPostingDay ?? 1}
+      familyName={family?.name ?? "Family workspace"}
+      viewerName={session.name}
+      initialAdmins={(family?.users ?? []).map((admin) => ({
+        ...admin,
+        isCurrent: admin.id === session.userId,
+      }))}
     />
   );
 }

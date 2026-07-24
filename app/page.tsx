@@ -116,7 +116,7 @@ export default function Home() {
           <h2>A healthier way to lend within the family.</h2>
         </div>
         <Link href="/demo" className="button button-gold button-large">Open the demo <ArrowRight size={18} /></Link>
-        <p><Check size={17} /> Includes 8 months of sample history for three child accounts</p>
+        <p><Check size={17} /> Demo includes 8 months of sample history for three child accounts</p>
       </section>
 
       <footer className="landing-footer container">

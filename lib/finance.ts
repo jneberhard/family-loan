@@ -1,7 +1,7 @@
 export type LedgerItem = {
   id: string;
   date: string;
-  type: "Loan" | "Payment" | "Interest" | "Adjustment";
+  type: "Loan" | "Payment" | "Interest" | "Adjustment" | "Rate change";
   description: string;
   amount: number;
   rate: number | null;

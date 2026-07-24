@@ -25,6 +25,7 @@ enum EntryType {
   PAYMENT
   INTEREST
   ADJUSTMENT
+  RATE_CHANGE
 }
 
 model Family {

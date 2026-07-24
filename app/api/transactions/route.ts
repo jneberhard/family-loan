@@ -11,6 +11,9 @@ export async function POST(request: Request) {
     });
     if (!account) return NextResponse.json({ error: "Account not found." }, { status: 404 });
 
+    if (!["LOAN", "PAYMENT", "ADJUSTMENT"].includes(body.type)) {
+      return NextResponse.json({ error: "Invalid transaction type." }, { status: 400 });
+    }
     const amount = Number(body.amount);
     if (!Number.isFinite(amount) || amount === 0) {
       return NextResponse.json({ error: "Amount must be a non-zero number." }, { status: 400 });

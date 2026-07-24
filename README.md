@@ -12,12 +12,16 @@ administrators; children receive read-only access to their own account.
 - Super-user console for approving or declining parent-lender applications
 - A parent portfolio with one ledger per child
 - Parent-created child accounts with temporary credentials and read-only access
+- Parent-created co-parent accounts with equal family-administrator permissions
 - Loan, payment, adjustment, and monthly interest ledger entries
 - Positive or negative adjustments, including balance-reducing family gifts
 - Parent-only transaction editing and removal with automatic balance recalculation
 - Interest rate captured on every applicable ledger line
+- Parent-controlled, effective-dated APR changes across a child's entire loan ledger
 - Exact day-count interest calculation with duplicate-posting protection
-- Configurable family interest-posting day in the data model
+- Working Family Access panel for reviewing read-only child membership
+- Working family settings for workspace name and monthly interest-posting day
+- Live loan snapshot progress derived from posted loans and payments
 - Interactive, database-free demo at `/demo`
 - Demo navigation back to the homepage and parent-mode child creation
 - CSV ledger export
@@ -40,6 +44,15 @@ administrators; children receive read-only access to their own account.
 Prerequisites: Node.js 20.9 or newer and pnpm 10.34. The project pins the pnpm
 version through the `packageManager` field so Corepack and Vercel use the same
 compatible release.
+
+Run every project command from:
+
+```powershell
+cd C:\Users\jrebe\Desktop\projects\family-loan
+```
+
+The application now lives directly in this folder; there is no second nested
+`family-loan` project directory.
 
 1. Install dependencies:
 
@@ -99,6 +112,18 @@ Change or remove these demo passwords before using real family data.
 5. The parent gives each child their temporary password. A child can see only
    their own ledger and cannot call parent write endpoints.
 
+## Co-parent access
+
+An approved parent can open **Family Access** from the dashboard and select
+**Add co-parent**. The parent supplies the co-parent's name, email address, and
+a temporary password of at least 12 characters.
+
+Co-parents are family administrators. Either parent can create child accounts,
+add, edit, or remove ledger transactions, change APRs, calculate interest, and
+manage family settings. Child accounts remain read only. The co-parent signs in
+through the normal login page and does not require a second super-user approval
+because the family workspace is already approved.
+
 Super-user accounts are not publicly creatable. Provision them through the seed
 process or the dedicated production command. Set `SUPER_USER_NAME`,
 `SUPER_USER_EMAIL`, and a unique 16+ character `SUPER_USER_PASSWORD`, then run:
@@ -129,12 +154,22 @@ unchanged balance for a whole month:
 4. closes the current balance interval on each payment, gift, adjustment, or
    additional loan date;
 5. calculates APR interest for the exact number of days in every interval;
-6. records the APR on the new interest ledger row; and
-7. refuses a duplicate interest posting for the same account and date.
+6. applies any parent-created APR change from its effective date forward;
+7. records the APR on the new interest ledger row; and
+8. refuses a duplicate interest posting for the same account and date.
 
 This means a loan made partway through a month accrues only from its loan date.
 A payment made before the monthly posting date reduces the balance used from
 the payment date onward, producing the correct partial-month interest.
+
+Parents can use **Change APR** on a child account to set a new rate and effective
+date. KinLedger records this as a zero-dollar rate-change ledger event. Earlier
+balance intervals retain their historical APR, while all outstanding and future
+loan balances for that child use the new APR from the selected date forward.
+
+The **Family Access** control lists every child account and its read-only login
+status. **Settings** lets the parent rename the family workspace and choose the
+monthly interest-posting day from 1 through 28.
 
 For production automation, connect a Vercel Cron job to the interest endpoint
 or a dedicated scheduled route. Keep the posting operation idempotent.
@@ -176,10 +211,10 @@ schema operations, matching Neon's recommended connection pattern.
 ## Main data model
 
 - `Family`: workspace, approval status, review note, and monthly posting preference
-- `User`: super user, parent administrator, or read-only child
+- `User`: super user, one or more parent administrators, or a read-only child
 - `LoanAccount`: one child loan with its default annual rate
-- `LedgerEntry`: immutable financial line item for loans, payments, interest,
-  and adjustments
+- `LedgerEntry`: dated financial line item for loans, payments, interest,
+  adjustments, and effective APR changes
 
 Authorization checks live on the server. Hiding controls in the interface is
 only a convenience; child accounts cannot call write endpoints successfully.

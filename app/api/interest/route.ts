@@ -42,7 +42,9 @@ export async function POST(request: Request) {
             ? "Payment"
             : entry.type === "INTEREST"
               ? "Interest"
-              : "Adjustment",
+              : entry.type === "RATE_CHANGE"
+                ? "Rate change"
+                : "Adjustment",
       description: entry.description,
       amount: Number(entry.amount),
       rate: entry.rate === null ? null : Number(entry.rate),
