@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  SUPER_USER
+  ADMIN
+  CHILD
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EntryType {
+  LOAN
+  PAYMENT
+  INTEREST
+  ADJUSTMENT
+}
+
+model Family {
+  id                 String         @id @default(cuid())
+  name               String
+  interestPostingDay Int            @default(1)
+  approvalStatus     ApprovalStatus @default(PENDING)
+  reviewedAt         DateTime?
+  reviewNote         String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  users              User[]
+  accounts           LoanAccount[]
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  role         UserRole
+  familyId     String?
+  family       Family?      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  childAccount LoanAccount? @relation("ChildLogin")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([familyId])
+  @@index([role])
+}
+
+model LoanAccount {
+  id           String        @id @default(cuid())
+  name         String
+  relationship String?       @default("Child")
+  email        String
+  annualRate   Decimal       @db.Decimal(6, 3)
+  familyId     String
+  family       Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  childUserId  String?       @unique
+  childUser    User?         @relation("ChildLogin", fields: [childUserId], references: [id], onDelete: SetNull)
+  transactions LedgerEntry[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([familyId])
+}
+
+model LedgerEntry {
+  id          String      @id @default(cuid())
+  accountId   String
+  account     LoanAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type        EntryType
+  effectiveAt DateTime
+  description String
+  amount      Decimal     @db.Decimal(14, 2)
+  rate        Decimal?    @db.Decimal(6, 3)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([accountId, effectiveAt])
+}
