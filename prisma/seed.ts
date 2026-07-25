@@ -5,6 +5,7 @@ import { demoChildren } from "../lib/demo-data";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.auditLog.deleteMany();
   await prisma.ledgerEntry.deleteMany();
   await prisma.loanAccount.deleteMany();
   await prisma.user.deleteMany();
@@ -60,7 +61,10 @@ async function main() {
         childUserId: childUser.id,
         transactions: {
           create: child.entries.map((entry) => ({
-            type: entry.type.toUpperCase() as EntryType,
+            type:
+              entry.type === "Rate change"
+                ? EntryType.RATE_CHANGE
+                : (entry.type.toUpperCase() as EntryType),
             effectiveAt: new Date(`${entry.date}T12:00:00Z`),
             description: entry.description,
             amount: entry.amount,

@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
+import { writeAudit } from "@/lib/audit";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireAdmin();
     const { id } = await params;
     const current = await prisma.ledgerEntry.findFirst({
-      where: { id, account: { familyId: session.familyId } },
+      where: { id, deletedAt: null, account: { familyId: session.familyId } },
       include: { account: { select: { annualRate: true } } },
     });
     if (!current) return NextResponse.json({ error: "Entry not found." }, { status: 404 });
@@ -26,15 +27,28 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         : type === "ADJUSTMENT"
           ? rawAmount
           : Math.abs(rawAmount);
-    const entry = await prisma.ledgerEntry.update({
-      where: { id },
-      data: {
-        type,
-        effectiveAt: body.effectiveAt ? new Date(`${body.effectiveAt}T12:00:00Z`) : undefined,
-        description: body.description,
-        amount,
-        rate: type === "PAYMENT" ? null : (body.rate ?? current.rate ?? current.account.annualRate),
-      },
+    const entry = await prisma.$transaction(async (tx) => {
+      const updated = await tx.ledgerEntry.update({
+        where: { id },
+        data: {
+          type,
+          effectiveAt: body.effectiveAt ? new Date(`${body.effectiveAt}T12:00:00Z`) : undefined,
+          description: body.description,
+          amount,
+          rate: type === "PAYMENT" ? null : (body.rate ?? current.rate ?? current.account.annualRate),
+        },
+      });
+      await writeAudit(tx, {
+        action: "LEDGER_ENTRY_UPDATED",
+        actorId: session.userId,
+        familyId: session.familyId,
+        accountId: current.accountId,
+        entityType: "LedgerEntry",
+        entityId: id,
+        before: current,
+        after: updated,
+      });
+      return updated;
     });
     return NextResponse.json(entry);
   } catch {
@@ -47,10 +61,25 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     const session = await requireAdmin();
     const { id } = await params;
     const current = await prisma.ledgerEntry.findFirst({
-      where: { id, account: { familyId: session.familyId } },
+      where: { id, deletedAt: null, account: { familyId: session.familyId } },
     });
     if (!current) return NextResponse.json({ error: "Entry not found." }, { status: 404 });
-    await prisma.ledgerEntry.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      const removed = await tx.ledgerEntry.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+      await writeAudit(tx, {
+        action: "LEDGER_ENTRY_REMOVED",
+        actorId: session.userId,
+        familyId: session.familyId,
+        accountId: current.accountId,
+        entityType: "LedgerEntry",
+        entityId: id,
+        before: current,
+        after: removed,
+      });
+    });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Unable to delete entry." }, { status: 500 });

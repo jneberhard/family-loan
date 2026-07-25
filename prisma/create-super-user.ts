@@ -21,9 +21,16 @@ async function main() {
   }
 
   const user = existing
-    ? await prisma.user.update({
+      ? await prisma.user.update({
         where: { email },
-        data: { name, passwordHash: await bcrypt.hash(password, 12) },
+        data: {
+          name,
+          passwordHash: await bcrypt.hash(password, 12),
+          sessionVersion: { increment: 1 },
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          mustChangePassword: false,
+        },
       })
     : await prisma.user.create({
         data: {

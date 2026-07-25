@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
+import { writeAudit } from "@/lib/audit";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,7 +31,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const result = await prisma.$transaction(async (tx) => {
       const effectiveAt = new Date(`${effectiveDate}T12:00:00Z`);
       const existing = await tx.ledgerEntry.findFirst({
-        where: { accountId: id, type: "RATE_CHANGE", effectiveAt },
+        where: { accountId: id, type: "RATE_CHANGE", effectiveAt, deletedAt: null },
       });
       const entry = existing
         ? await tx.ledgerEntry.update({
@@ -52,12 +53,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           });
 
       const latestRate = await tx.ledgerEntry.findFirst({
-        where: { accountId: id, type: "RATE_CHANGE" },
+        where: { accountId: id, type: "RATE_CHANGE", deletedAt: null },
         orderBy: [{ effectiveAt: "desc" }, { createdAt: "desc" }],
       });
       await tx.loanAccount.update({
         where: { id },
         data: { annualRate: latestRate?.rate ?? apr },
+      });
+      await writeAudit(tx, {
+        action: "APR_CHANGED",
+        actorId: session.userId,
+        familyId: session.familyId,
+        accountId: id,
+        entityType: "LedgerEntry",
+        entityId: entry.id,
+        before: existing,
+        after: entry,
       });
       return { entry, currentApr: Number(latestRate?.rate ?? apr) };
     });

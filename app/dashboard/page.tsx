@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.mustChangePassword) redirect("/change-password");
   if (session.role === "SUPER_USER") redirect("/super-admin");
 
   const family = session.familyId
@@ -30,7 +31,12 @@ export default async function DashboardPage() {
     where: session.role === "ADMIN"
       ? { familyId: session.familyId }
       : { id: session.accountId ?? "__none__" },
-    include: { transactions: { orderBy: { effectiveAt: "asc" } } },
+    include: {
+      transactions: {
+        where: { deletedAt: null },
+        orderBy: { effectiveAt: "asc" },
+      },
+    },
     orderBy: { createdAt: "asc" },
   });
 

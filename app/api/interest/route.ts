@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateAprInterest, type LedgerItem } from "@/lib/finance";
 import { requireAdmin } from "@/lib/session";
+import { writeAudit } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +20,12 @@ export async function POST(request: Request) {
 
     const account = await prisma.loanAccount.findFirst({
       where: { id: accountId, familyId: session.familyId },
-      include: { transactions: { orderBy: [{ effectiveAt: "asc" }, { createdAt: "asc" }] } },
+      include: {
+        transactions: {
+          where: { deletedAt: null },
+          orderBy: [{ effectiveAt: "asc" }, { createdAt: "asc" }],
+        },
+      },
     });
     if (!account) return NextResponse.json({ error: "Account not found." }, { status: 404 });
 
@@ -62,15 +68,27 @@ export async function POST(request: Request) {
       );
     }
 
-    const entry = await prisma.ledgerEntry.create({
-      data: {
+    const entry = await prisma.$transaction(async (tx) => {
+      const created = await tx.ledgerEntry.create({
+        data: {
         accountId,
         type: "INTEREST",
         effectiveAt: new Date(`${periodEnd}T12:00:00Z`),
         description: `APR interest · ${periodStart} to ${periodEnd} · ${calculation.segments.length} balance period${calculation.segments.length === 1 ? "" : "s"}`,
         amount: calculation.total,
         rate: account.annualRate,
-      },
+        },
+      });
+      await writeAudit(tx, {
+        action: "INTEREST_POSTED",
+        actorId: session.userId,
+        familyId: session.familyId,
+        accountId,
+        entityType: "LedgerEntry",
+        entityId: created.id,
+        after: { ...created, calculation },
+      });
+      return created;
     });
 
     return NextResponse.json(

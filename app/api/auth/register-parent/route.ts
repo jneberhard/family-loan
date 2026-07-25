@@ -18,8 +18,8 @@ export async function POST(request: Request) {
     if (!email.includes("@")) {
       return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
     }
-    if (password.length < 12) {
-      return NextResponse.json({ error: "Password must be at least 12 characters." }, { status: 400 });
+    if (password.length < 16) {
+      return NextResponse.json({ error: "Password must be at least 16 characters." }, { status: 400 });
     }
     if (!Number.isInteger(interestPostingDay) || interestPostingDay < 1 || interestPostingDay > 28) {
       return NextResponse.json({ error: "Interest posting day must be between 1 and 28." }, { status: 400 });

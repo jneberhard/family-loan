@@ -9,6 +9,7 @@ export const metadata = { title: "Super user console" };
 export default async function SuperAdminPage() {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (session.mustChangePassword) redirect("/change-password");
   if (session.role !== "SUPER_USER") redirect("/dashboard");
 
   const families = await prisma.family.findMany({

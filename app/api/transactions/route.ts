@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
+import { writeAudit } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
@@ -24,15 +25,27 @@ export async function POST(request: Request) {
         : body.type === "ADJUSTMENT"
           ? amount
           : Math.abs(amount);
-    const entry = await prisma.ledgerEntry.create({
-      data: {
+    const entry = await prisma.$transaction(async (tx) => {
+      const created = await tx.ledgerEntry.create({
+        data: {
+          accountId: account.id,
+          type: body.type,
+          effectiveAt: new Date(`${body.effectiveAt}T12:00:00Z`),
+          description: body.description,
+          amount: signedAmount,
+          rate: body.type === "PAYMENT" ? null : (body.rate ?? account.annualRate),
+        },
+      });
+      await writeAudit(tx, {
+        action: "LEDGER_ENTRY_CREATED",
+        actorId: session.userId,
+        familyId: session.familyId,
         accountId: account.id,
-        type: body.type,
-        effectiveAt: new Date(`${body.effectiveAt}T12:00:00Z`),
-        description: body.description,
-        amount: signedAmount,
-        rate: body.type === "PAYMENT" ? null : (body.rate ?? account.annualRate),
-      },
+        entityType: "LedgerEntry",
+        entityId: created.id,
+        after: created,
+      });
+      return created;
     });
     return NextResponse.json(entry, { status: 201 });
   } catch (error) {

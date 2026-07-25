@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { ContactForm } from "@/components/contact-form";
 
 export default function Home() {
   return (
@@ -19,6 +20,7 @@ export default function Home() {
           <span>KinLedger</span>
         </Link>
         <div className="landing-nav-actions">
+          <Link href="#contact" className="button button-ghost">Contact</Link>
           <Link href="/login" className="button button-ghost">Sign in</Link>
           <Link href="/become-parent" className="button button-primary">Become a parent lender</Link>
         </div>
@@ -109,6 +111,21 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="contact-section" id="contact">
+        <div className="container contact-grid">
+          <div className="contact-copy">
+            <span className="section-kicker">Contact KinLedger</span>
+            <h2>Questions about lending clearly within your family?</h2>
+            <p>
+              Send us a note about parent-lender accounts, technical support,
+              privacy, or anything else you would like to understand.
+            </p>
+            <span className="contact-email">Messages are delivered securely to the KinLedger team.</span>
+          </div>
+          <ContactForm />
+        </div>
+      </section>
+
       <section className="cta-section container">
         <Image src="/kinledger-logo.png" alt="" width={88} height={88} />
         <div>
@@ -121,7 +138,7 @@ export default function Home() {
 
       <footer className="landing-footer container">
         <span>© 2026 KinLedger</span>
-        <span>Private by design · Clear by default</span>
+        <span>Private by design · Clear by default · <Link href="/privacy">Privacy</Link></span>
       </footer>
     </main>
   );

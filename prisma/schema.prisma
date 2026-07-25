@@ -42,16 +42,22 @@ model Family {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  name         String
-  passwordHash String
-  role         UserRole
-  familyId     String?
-  family       Family?      @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  childAccount LoanAccount? @relation("ChildLogin")
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id                  String       @id @default(cuid())
+  email               String       @unique
+  name                String
+  passwordHash        String
+  role                UserRole
+  familyId            String?
+  family              Family?      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  childAccount        LoanAccount? @relation("ChildLogin")
+  sessionVersion      Int          @default(1)
+  failedLoginAttempts Int          @default(0)
+  lockedUntil         DateTime?
+  mustChangePassword  Boolean      @default(false)
+  lastLoginAt         DateTime?
+  auditLogs           AuditLog[]   @relation("AuditActor")
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   @@index([familyId])
   @@index([role])
@@ -83,8 +89,28 @@ model LedgerEntry {
   description String
   amount      Decimal     @db.Decimal(14, 2)
   rate        Decimal?    @db.Decimal(6, 3)
+  deletedAt   DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   @@index([accountId, effectiveAt])
+  @@index([accountId, deletedAt, effectiveAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  actorId    String?
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  familyId   String?
+  accountId  String?
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([familyId, createdAt])
+  @@index([accountId, createdAt])
+  @@index([actorId, createdAt])
 }

@@ -160,6 +160,23 @@ a { color: inherit; text-decoration: none; }
 .feature-grid i { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: rgba(129,199,132,.12); color: var(--sage); }
 .feature-grid h3 { font-size: 16px; margin: 24px 0 10px; }
 .feature-grid p { color: #bdc8c0; line-height: 1.65; font-size: 13px; margin: 0; }
+.contact-section { padding: 105px 0; background: white; border-bottom: 1px solid var(--border); }
+.contact-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: 80px; align-items: start; }
+.contact-copy { position: sticky; top: 30px; }
+.contact-copy h2 { font-family: var(--font-serif), Georgia, serif; font-size: 44px; line-height: 1.08; letter-spacing: -.03em; font-weight: 520; margin: 15px 0 20px; }
+.contact-copy > p { color: var(--slate); font-size: 15px; line-height: 1.75; margin: 0 0 24px; }
+.contact-email { display: inline-flex; color: var(--green); background: #eef6ef; border: 1px solid #dbeade; border-radius: 10px; padding: 10px 12px; font-size: 11px; font-weight: 750; }
+.contact-form { background: var(--background); border: 1px solid var(--border); border-radius: 20px; padding: 30px; display: grid; gap: 18px; box-shadow: 0 16px 45px rgba(36,62,44,.06); }
+.contact-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.contact-form label { display: grid; gap: 8px; color: #45504a; font-size: 11px; font-weight: 800; }
+.contact-form input, .contact-form select, .contact-form textarea { width: 100%; border: 1px solid #dce1de; border-radius: 10px; background: white; color: var(--charcoal); padding: 12px 13px; font: inherit; font-size: 13px; outline: none; transition: 150ms ease; }
+.contact-form textarea { resize: vertical; min-height: 135px; line-height: 1.55; }
+.contact-form input:focus, .contact-form select:focus, .contact-form textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,125,50,.09); }
+.contact-honeypot { position: absolute !important; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.contact-submit-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.contact-status { color: var(--slate); display: flex; align-items: center; gap: 7px; font-size: 11px; line-height: 1.5; margin: 0; }
+.contact-status.sent { color: var(--green); }
+.contact-status.error { color: #a23c35; }
 .cta-section { margin-block: 110px; display: grid; grid-template-columns: 90px 1fr auto; gap: 28px; align-items: center; }
 .cta-section img { border-radius: 24px; }
 .cta-section h2 { font-size: 37px; margin-top: 9px; }
@@ -420,6 +437,13 @@ a { color: inherit; text-decoration: none; }
   .container { width: min(100% - 28px, 680px); }
   .landing-nav { height: 70px; }
   .landing-nav-actions .button-ghost { display: none; }
+  .contact-section { padding: 75px 0; }
+  .contact-grid { grid-template-columns: 1fr; gap: 35px; }
+  .contact-copy { position: static; }
+  .contact-copy h2 { font-size: 36px; }
+  .contact-field-grid { grid-template-columns: 1fr; }
+  .contact-submit-row { align-items: stretch; flex-direction: column; }
+  .contact-submit-row .button { width: 100%; }
   .hero { grid-template-columns: 1fr; padding: 55px 0 80px; gap: 45px; }
   .hero h1 { font-size: clamp(46px, 12vw, 68px); }
   .hero-visual { height: 430px; }
@@ -457,6 +481,38 @@ a { color: inherit; text-decoration: none; }
   .metric-grid { grid-template-columns: 1fr 1fr; }
   .dashboard-side { grid-template-columns: 1fr; }
 }
+.privacy-page {
+  min-height: 100vh;
+  padding: 48px 20px 80px;
+  background: linear-gradient(145deg, #eef5ef 0%, var(--background) 55%, #f8f3df 100%);
+}
+.privacy-card {
+  width: min(100%, 820px);
+  margin: 0 auto;
+  padding: 42px clamp(24px, 6vw, 64px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(45, 55, 72, .1);
+}
+.privacy-brand { margin: 32px 0 24px; }
+.privacy-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--green);
+  background: #edf7ee;
+  border-radius: 14px;
+}
+.privacy-card h1 { margin: 14px 0 4px; font-size: clamp(38px, 6vw, 56px); }
+.privacy-updated { color: var(--slate); margin-bottom: 38px; }
+.privacy-card section { padding: 24px 0; border-top: 1px solid var(--border); }
+.privacy-card h2 { margin: 0 0 10px; font-size: 22px; }
+.privacy-card section p { margin: 0; color: var(--slate); line-height: 1.75; }
+.privacy-card a { color: var(--green); font-weight: 700; }
+.landing-footer a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
 @media (max-width: 520px) {
   .brand { font-size: 18px; }
   .landing-nav-actions .button { padding: 9px 11px; font-size: 11px; }

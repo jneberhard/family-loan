@@ -25,7 +25,13 @@ export function LoginForm() {
       return;
     }
     const result = await response.json();
-    router.push(result.role === "SUPER_USER" ? "/super-admin" : "/dashboard");
+    router.push(
+      result.mustChangePassword
+        ? "/change-password"
+        : result.role === "SUPER_USER"
+          ? "/super-admin"
+          : "/dashboard",
+    );
     router.refresh();
   }
 

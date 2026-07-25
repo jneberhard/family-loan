@@ -732,7 +732,7 @@ export function DemoDashboard({
             <label>Email address<input name="email" type="email" placeholder="alex@example.com" required /></label>
             <label>Loan purpose<input name="purpose" placeholder="Home renovation" required /></label>
             <label>Annual interest rate (%)<input name="rate" type="number" min="0" step="0.001" defaultValue="3.75" required /></label>
-            {!demoMode && <label>Temporary password<input name="temporaryPassword" type="password" minLength={12} placeholder="12+ characters" required /></label>}
+            {!demoMode && <label>Temporary password<input name="temporaryPassword" type="password" minLength={16} placeholder="16+ characters" required /></label>}
             <div className="invite-note"><LockKeyhole size={16} /> The child will only see their own account and cannot make changes.</div>
             <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal(null)}>Cancel</button><button className="button button-primary">Create account</button></div>
           </form>
@@ -786,7 +786,7 @@ export function DemoDashboard({
           <form action={addCoParent} className="modal-form">
             <label>Full name<input name="name" placeholder="Morgan Bennett" required /></label>
             <label>Email address<input name="email" type="email" placeholder="morgan@example.com" required /></label>
-            <label>Temporary password<input name="temporaryPassword" type="password" minLength={12} placeholder="12+ characters" required /></label>
+            <label>Temporary password<input name="temporaryPassword" type="password" minLength={16} placeholder="16+ characters" required /></label>
             <div className="invite-note"><ShieldCheck size={16} /> This co-parent can add, edit, and remove transactions, create child accounts, change APRs, post interest, and manage family settings.</div>
             <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal("access")}>Back</button><button className="button button-primary">Create co-parent account</button></div>
           </form>
@@ -799,6 +799,7 @@ export function DemoDashboard({
             <label>Family workspace name<input name="familyName" defaultValue={workspaceName} required /></label>
             <label>Monthly interest posting day<input name="postingDay" type="number" min="1" max="28" defaultValue={postingDay} required /><small className="field-help">Choose day 1 through 28 so every month has a valid posting date.</small></label>
             <div className="invite-note"><ShieldCheck size={16} /> These controls are available only to family administrators.</div>
+            {!demoMode && <Link href="/change-password" className="text-link">Change my password</Link>}
             <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal(null)}>Cancel</button><button className="button button-primary">Save settings</button></div>
           </form>
         </Modal>

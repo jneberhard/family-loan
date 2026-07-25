@@ -68,7 +68,7 @@ export function ParentRegistrationForm() {
       <div className="field-grid">
         <label>
           Password
-          <input name="password" type="password" autoComplete="new-password" minLength={12} placeholder="12+ characters" required />
+          <input name="password" type="password" autoComplete="new-password" minLength={16} placeholder="16+ characters" required />
         </label>
         <label>
           Monthly interest day

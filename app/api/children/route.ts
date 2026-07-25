@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 
@@ -11,8 +12,8 @@ export async function POST(request: Request) {
     if (!name || !email || annualRate === undefined || !temporaryPassword) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
-    if (String(temporaryPassword).length < 12) {
-      return NextResponse.json({ error: "Temporary password must be at least 12 characters." }, { status: 400 });
+    if (String(temporaryPassword).length < 16) {
+      return NextResponse.json({ error: "Temporary password must be at least 16 characters." }, { status: 400 });
     }
     const rate = Number(annualRate);
     if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
@@ -27,9 +28,10 @@ export async function POST(request: Request) {
           passwordHash: await bcrypt.hash(String(temporaryPassword), 12),
           role: "CHILD",
           familyId: session.familyId,
+          mustChangePassword: true,
         },
       });
-      return tx.loanAccount.create({
+      const created = await tx.loanAccount.create({
         data: {
           name,
           email: String(email).toLowerCase().trim(),
@@ -39,6 +41,16 @@ export async function POST(request: Request) {
           childUserId: user.id,
         },
       });
+      await writeAudit(tx, {
+        action: "CHILD_ACCOUNT_CREATED",
+        actorId: session.userId,
+        familyId: session.familyId,
+        accountId: created.id,
+        entityType: "LoanAccount",
+        entityId: created.id,
+        after: { name: created.name, email: created.email, annualRate: created.annualRate },
+      });
+      return created;
     });
 
     return NextResponse.json(account, { status: 201 });
