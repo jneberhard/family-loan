@@ -17,6 +17,7 @@ import {
   Eye,
   HandCoins,
   House,
+  KeyRound,
   LayoutDashboard,
   LockKeyhole,
   LogOut,
@@ -131,6 +132,7 @@ export function DemoDashboard({
   const [postingDay, setPostingDay] = useState(interestPostingDay);
   const [workspaceName, setWorkspaceName] = useState(familyName);
   const [sendingBalanceEmail, setSendingBalanceEmail] = useState(false);
+  const [ledgerView, setLedgerView] = useState<"auto" | "cards" | "table">("auto");
 
   const selected = children.find((child) => child.id === selectedId) ?? children[0] ?? emptyChild;
   const ledgers = useMemo(
@@ -745,7 +747,7 @@ export function DemoDashboard({
           {role === "parent" && <button onClick={() => { setModal("access"); setMobileNav(false); }}><Users size={19} /> Family access</button>}
           {role === "parent" && <button onClick={() => { setModal("settings"); setMobileNav(false); }}><Settings size={19} /> Settings</button>}
           {role === "parent" && <span className="side-label side-label-help">Help</span>}
-          {role === "parent" && <Link href="/guide" onClick={() => setMobileNav(false)}><BookOpen size={19} /> User guide</Link>}
+          {role === "parent" && <Link href="/guide" className="desktop-help-guide" onClick={() => setMobileNav(false)}><BookOpen size={19} /> User guide</Link>}
           {role === "parent" && (
             <ContactModal
               triggerLabel={<><MessageCircle size={19} /> Contact KinLedger</>}
@@ -753,6 +755,25 @@ export function DemoDashboard({
               defaultSubject="Parent-lender account"
               onOpen={() => setMobileNav(false)}
             />
+          )}
+          {!demoMode && <span className="side-label side-label-help">Account</span>}
+          {!demoMode && (
+            <Link href="/change-password" onClick={() => setMobileNav(false)}>
+              <KeyRound size={19} /> Change password
+            </Link>
+          )}
+          {!demoMode && (
+            <>
+              <Link href="/guide" className="mobile-account-link" onClick={() => setMobileNav(false)}>
+                <BookOpen size={19} /> User guide
+              </Link>
+              <Link href="/legal" className="mobile-account-link" onClick={() => setMobileNav(false)}>
+                <ShieldCheck size={19} /> Legal
+              </Link>
+              <Link href="/privacy" className="mobile-account-link" onClick={() => setMobileNav(false)}>
+                <LockKeyhole size={19} /> Privacy
+              </Link>
+            </>
           )}
         </nav>
 
@@ -824,6 +845,19 @@ export function DemoDashboard({
           </div>
         )}
 
+        {children.length > 0 && (
+          <div className="mobile-balance-summary">
+            <span>
+              <small>{selected.name.split(" ")[0]}&apos;s current balance</small>
+              <strong>{money.format(selectedBalance)}</strong>
+            </span>
+            <span>
+              <small>APR</small>
+              <strong>{selected.rate.toFixed(2)}%</strong>
+            </span>
+          </div>
+        )}
+
         <section className="dashboard-content">
           {role === "parent" && children.length === 0 ? (
             <div className="empty-workspace">
@@ -848,7 +882,17 @@ export function DemoDashboard({
               <p>{selected.purpose} · Opened {new Date(selected.entries[0]?.date ?? "2026-01-01").toLocaleDateString("en-US", { month: "long", year: "numeric" })}</p>
             </div>
             <div className="account-actions">
+              {role === "parent" && (
+                <button className="button button-primary mobile-account-add" onClick={() => setModal("entry")}>
+                  <Plus size={17} /> Add entry
+                </button>
+              )}
               <button className="button button-soft" onClick={exportLedger}><Download size={17} /> Export</button>
+              {role === "child" && !demoMode && (
+                <Link href="/change-password" className="button button-soft">
+                  <KeyRound size={17} /> Change password
+                </Link>
+              )}
               {role === "parent" && <button className="button button-soft" onClick={() => setModal("balanceEmail")}><Mail size={17} /> Email balance</button>}
               {role === "parent" && <button className="button button-soft" onClick={() => setModal("rate")}><Settings size={17} /> Change APR</button>}
               {role === "parent" && <button className="button button-gold" onClick={() => setModal("interest")}><CircleDollarSign size={17} /> Calculate interest</button>}
@@ -885,10 +929,30 @@ export function DemoDashboard({
           </div>
 
           <div className="dashboard-grid">
-            <article className="panel ledger-panel">
+            <article className={`panel ledger-panel ledger-view-${ledgerView}`}>
               <div className="panel-header">
                 <div><h3>Account ledger</h3><p>Every transaction and interest posting</p></div>
-                <button className="icon-button"><MoreHorizontal /></button>
+                <div className="ledger-header-actions">
+                  <div className="ledger-view-toggle" role="group" aria-label="Transaction display">
+                    <button
+                      type="button"
+                      className={ledgerView !== "table" ? "active" : ""}
+                      onClick={() => setLedgerView("cards")}
+                      aria-pressed={ledgerView !== "table"}
+                    >
+                      Cards
+                    </button>
+                    <button
+                      type="button"
+                      className={ledgerView === "table" ? "active" : ""}
+                      onClick={() => setLedgerView("table")}
+                      aria-pressed={ledgerView === "table"}
+                    >
+                      Ledger
+                    </button>
+                  </div>
+                  <button className="icon-button" aria-label="More ledger options"><MoreHorizontal /></button>
+                </div>
               </div>
               <div className="ledger-table-wrap">
                 <table className="ledger-table">
@@ -919,6 +983,47 @@ export function DemoDashboard({
                     {!selectedLedger.length && <tr><td colSpan={role === "parent" ? 6 : 5} className="empty-cell">No ledger entries yet.</td></tr>}
                   </tbody>
                 </table>
+              </div>
+              <div className="ledger-cards">
+                {[...selectedLedger].reverse().map((entry) => (
+                  <article className="transaction-card" key={entry.id}>
+                    <div className="transaction-card-heading">
+                      <div className={`entry-icon ${entry.type.toLowerCase()}`}>
+                        {entry.type === "Payment" ? <ArrowDownLeft /> : entry.type === "Interest" ? <CircleDollarSign /> : <ArrowUpRight />}
+                      </div>
+                      <div>
+                        <time dateTime={entry.date}>
+                          {new Date(`${entry.date}T12:00:00`).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </time>
+                        <strong>{entry.description}</strong>
+                        <small>{entry.type}{entry.rate ? ` · ${entry.rate.toFixed(2)}% APR` : ""}</small>
+                      </div>
+                      {role === "parent" && (
+                        <div className="transaction-card-actions">
+                          <button onClick={() => editEntry(entry)} aria-label={`Edit ${entry.description}`}><Pencil size={16} /></button>
+                          <button className="danger" onClick={() => removeEntry(entry)} aria-label={`Remove ${entry.description}`}><Trash2 size={16} /></button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="transaction-card-values">
+                      <span>
+                        <small>Amount</small>
+                        <strong className={entry.amount < 0 ? "payment-amount" : ""}>
+                          {entry.type === "Rate change" ? "Rate only" : `${entry.amount < 0 ? "−" : "+"}${money.format(Math.abs(entry.amount))}`}
+                        </strong>
+                      </span>
+                      <span>
+                        <small>Balance</small>
+                        <strong>{money.format(entry.balance)}</strong>
+                      </span>
+                    </div>
+                  </article>
+                ))}
+                {!selectedLedger.length && <p className="empty-card-ledger">No ledger entries yet.</p>}
               </div>
               <div className="panel-footer"><span>Showing {selectedLedger.length} entries</span><button onClick={exportLedger}>Download full ledger</button></div>
             </article>
@@ -963,6 +1068,25 @@ export function DemoDashboard({
             </nav>
           </footer>
         )}
+
+        <nav className="mobile-bottom-nav" aria-label={role === "parent" ? "Parent navigation" : "Child navigation"}>
+          {role === "parent" ? (
+            <>
+              <Link href="/"><House size={20} /><span>Home</span></Link>
+              <button type="button" onClick={() => setMobileNav(true)}><Users size={20} /><span>Children</span></button>
+              <button type="button" className="primary" onClick={() => setModal("entry")} disabled={!children.length}><Plus size={22} /><span>Add entry</span></button>
+              <button type="button" onClick={() => document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" })}><ReceiptText size={20} /><span>Activity</span></button>
+              <button type="button" onClick={() => setMobileNav(true)}><UserPlus size={20} /><span>Account</span></button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}><WalletCards size={20} /><span>Balance</span></button>
+              <button type="button" onClick={() => document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" })}><ReceiptText size={20} /><span>Activity</span></button>
+              <button type="button" onClick={exportLedger}><Download size={20} /><span>Statements</span></button>
+              <button type="button" onClick={() => setMobileNav(true)}><UserPlus size={20} /><span>Account</span></button>
+            </>
+          )}
+        </nav>
       </section>
 
       {modal === "entry" && (

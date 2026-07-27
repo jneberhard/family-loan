@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KeyRound } from "lucide-react";
 import { ChangePasswordForm } from "@/components/change-password-form";
@@ -35,6 +36,11 @@ export default async function ChangePasswordPage() {
               : "Enter your current password, then choose a new one."}
           </p>
           <ChangePasswordForm />
+          {!session.mustChangePassword && (
+            <Link href={session.role === "SUPER_USER" ? "/super-admin" : "/dashboard"} className="change-password-back">
+              Cancel and return to dashboard
+            </Link>
+          )}
         </div>
       </section>
     </main>
