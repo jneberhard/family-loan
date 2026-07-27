@@ -19,6 +19,7 @@ import {
   House,
   LayoutDashboard,
   LockKeyhole,
+  LogOut,
   Menu,
   Mail,
   MessageCircle,
@@ -712,6 +713,13 @@ export function DemoDashboard({
   return (
     <main className={`app-shell ${demoMode ? "" : "has-app-footer"}`}>
       {toast && <div className="toast"><Check size={17} /> {toast}</div>}
+      <button
+        type="button"
+        className={`sidebar-scrim ${mobileNav ? "visible" : ""}`}
+        onClick={() => setMobileNav(false)}
+        aria-label="Close navigation"
+        tabIndex={mobileNav ? 0 : -1}
+      />
       <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
         <div className="sidebar-top">
           <Link href="/" className="brand app-brand">
@@ -774,7 +782,15 @@ export function DemoDashboard({
         <div className="sidebar-account">
           <div className="avatar">{role === "parent" ? viewerName.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase() : selected.initials}</div>
           <span><strong>{role === "parent" ? viewerName : selected.name}</strong><small>{role === "parent" ? "Family admin" : "Read-only member"}</small></span>
-          <ChevronDown size={16} />
+          {demoMode ? (
+            <ChevronDown size={16} />
+          ) : (
+            <form action="/api/auth/logout" method="post">
+              <button type="submit" className="sidebar-logout" aria-label="Log out" title="Log out">
+                <LogOut size={15} /> <span>Log out</span>
+              </button>
+            </form>
+          )}
         </div>
       </aside>
 
