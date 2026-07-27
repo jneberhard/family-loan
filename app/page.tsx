@@ -21,6 +21,7 @@ export default function Home() {
         </Link>
         <div className="landing-nav-actions">
           <ContactModal triggerClassName="button button-ghost" />
+          <Link href="/demo" className="button button-gold">Demo</Link>
           <Link href="/login" className="button button-ghost">Sign in</Link>
           <Link href="/become-parent" className="button button-primary">Become a parent lender</Link>
         </div>

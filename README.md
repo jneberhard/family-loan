@@ -31,6 +31,7 @@ administrators; children receive read-only access to their own account.
 - Live loan snapshot progress derived from posted loans and payments
 - Accessible pop-out contact form with server-side validation and Resend-ready delivery
 - Interactive, database-free demo at `/demo`
+- Persistent **Demo** button in the homepage header
 - Demo navigation back to the homepage and parent-mode child creation
 - CSV ledger export
 - Responsive desktop and mobile layouts
