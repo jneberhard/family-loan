@@ -658,14 +658,29 @@ a { color: inherit; text-decoration: none; }
     transition: opacity .2s ease;
   }
   .sidebar-scrim.visible { opacity: 1; pointer-events: auto; }
-  .sidebar { width: min(86vw, 300px); transform: translateX(-100%); transition: transform .2s ease; box-shadow: 20px 0 60px rgba(28,48,34,.18); padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .sidebar {
+    width: min(86vw, 300px);
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+    box-shadow: 20px 0 60px rgba(28,48,34,.18);
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #b7c7ba transparent;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #b7c7ba; border-radius: 999px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
   .sidebar.open { transform: translateX(0); }
   .mobile-close, .mobile-menu { display: grid; }
   .side-nav > button, .side-nav > a { min-height: 44px; font-size: 12px; }
   .side-nav > .desktop-help-guide { display: none; }
   .side-nav > .mobile-account-link { display: flex; }
   .child-nav-item { min-height: 48px; }
-  .sidebar-account { padding-bottom: 2px; }
+  .sidebar-family { flex: 0 0 auto; overflow: visible; }
+  .sidebar-account { flex: 0 0 auto; margin-top: 18px; padding-bottom: 2px; }
   .sidebar-logout { min-width: 40px; height: 40px; font-size: 9px; }
   .app-main { margin-left: 0; padding-top: 73px; }
   .app-header { inset-inline: 0; padding: 0 17px; height: 73px; gap: 12px; }
