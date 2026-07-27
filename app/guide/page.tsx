@@ -14,6 +14,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { getSession } from "@/lib/session";
 
 export const metadata = {
   title: "User Guide",
@@ -31,7 +32,16 @@ const guideSections = [
   ["good-records", "Keeping good records"],
 ] as const;
 
-export default function GuidePage() {
+export default async function GuidePage() {
+  const session = await getSession();
+  const returnHref = session
+    ? session.mustChangePassword
+      ? "/change-password"
+      : session.role === "SUPER_USER"
+        ? "/super-admin"
+        : "/dashboard"
+    : "/";
+
   return (
     <main className="guide-page">
       <nav className="guide-nav container" aria-label="Guide navigation">
@@ -39,7 +49,9 @@ export default function GuidePage() {
           <Image src="/kinledger-logo.png" alt="" width={44} height={44} priority />
           <span>KinLedger</span>
         </Link>
-        <Link href="/" className="guide-home-link"><ArrowLeft size={16} /> Back home</Link>
+        <Link href={returnHref} className="guide-home-link">
+          <ArrowLeft size={16} /> {session ? "Back to dashboard" : "Back home"}
+        </Link>
       </nav>
 
       <div className="guide-layout container">

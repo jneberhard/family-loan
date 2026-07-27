@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { CheckCircle2, Send, X } from "lucide-react";
 
 function ContactForm({ defaultSubject = "General question" }: { defaultSubject?: string }) {
@@ -83,10 +84,12 @@ export function ContactModal({
   triggerLabel = "Contact",
   triggerClassName = "button button-primary",
   defaultSubject,
+  onOpen,
 }: {
-  triggerLabel?: string;
+  triggerLabel?: ReactNode;
   triggerClassName?: string;
   defaultSubject?: string;
+  onOpen?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const titleId = useId();
@@ -134,7 +137,10 @@ export function ContactModal({
         ref={triggerRef}
         type="button"
         className={triggerClassName}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          onOpen?.();
+          setOpen(true);
+        }}
       >
         {triggerLabel}
       </button>

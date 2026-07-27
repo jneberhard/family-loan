@@ -10,8 +10,16 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ContactModal } from "@/components/contact-form";
+import { getSession } from "@/lib/session";
 
-export default function Home() {
+export default async function Home() {
+  const session = await getSession();
+  const accountHref = session?.mustChangePassword
+    ? "/change-password"
+    : session?.role === "SUPER_USER"
+      ? "/super-admin"
+      : "/dashboard";
+
   return (
     <main className="landing-shell">
       <nav className="landing-nav container">
@@ -22,8 +30,14 @@ export default function Home() {
         <div className="landing-nav-actions">
           <ContactModal triggerClassName="button button-ghost" />
           <Link href="/demo" className="button button-gold">Demo</Link>
-          <Link href="/login" className="button button-ghost">Sign in</Link>
-          <Link href="/become-parent" className="button button-primary">Become a parent lender</Link>
+          {session ? (
+            <Link href={accountHref} className="button button-primary">Open dashboard</Link>
+          ) : (
+            <>
+              <Link href="/login" className="button button-ghost">Sign in</Link>
+              <Link href="/become-parent" className="button button-primary">Become a parent lender</Link>
+            </>
+          )}
         </div>
       </nav>
 

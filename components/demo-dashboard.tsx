@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Bell,
+  BookOpen,
   CalendarDays,
   Check,
   ChevronDown,
@@ -15,10 +16,12 @@ import {
   Download,
   Eye,
   HandCoins,
+  House,
   LayoutDashboard,
   LockKeyhole,
   Menu,
   Mail,
+  MessageCircle,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -36,6 +39,7 @@ import {
 import { demoChildren, type DemoChild } from "@/lib/demo-data";
 import { calculateAprInterest, calculateRunningLedger, type LedgerItem } from "@/lib/finance";
 import { PasswordInput } from "@/components/password-input";
+import { ContactModal } from "@/components/contact-form";
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -706,7 +710,7 @@ export function DemoDashboard({
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${demoMode ? "" : "has-app-footer"}`}>
       {toast && <div className="toast"><Check size={17} /> {toast}</div>}
       <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
         <div className="sidebar-top">
@@ -728,9 +732,20 @@ export function DemoDashboard({
         <nav className="side-nav">
           <span className="side-label">Workspace</span>
           <button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setMobileNav(false); }}><LayoutDashboard size={19} /> Overview</button>
+          <Link href="/" onClick={() => setMobileNav(false)}><House size={19} /> Home page</Link>
           <button onClick={() => { document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" }); setMobileNav(false); }}><ReceiptText size={19} /> All transactions</button>
           {role === "parent" && <button onClick={() => { setModal("access"); setMobileNav(false); }}><Users size={19} /> Family access</button>}
           {role === "parent" && <button onClick={() => { setModal("settings"); setMobileNav(false); }}><Settings size={19} /> Settings</button>}
+          {role === "parent" && <span className="side-label side-label-help">Help</span>}
+          {role === "parent" && <Link href="/guide" onClick={() => setMobileNav(false)}><BookOpen size={19} /> User guide</Link>}
+          {role === "parent" && (
+            <ContactModal
+              triggerLabel={<><MessageCircle size={19} /> Contact KinLedger</>}
+              triggerClassName="side-nav-contact"
+              defaultSubject="Parent-lender account"
+              onOpen={() => setMobileNav(false)}
+            />
+          )}
         </nav>
 
         <div className="sidebar-family">
@@ -920,6 +935,17 @@ export function DemoDashboard({
           </>
           )}
         </section>
+
+        {!demoMode && (
+          <footer className="app-footer">
+            <span>© 2026 KinLedger <b>·</b> {workspaceName}</span>
+            <nav aria-label="Account footer">
+              <span>Signed in as {viewerName}</span>
+              <Link href="/guide">User guide</Link>
+              <Link href="/privacy">Privacy</Link>
+            </nav>
+          </footer>
+        )}
       </section>
 
       {modal === "entry" && (
