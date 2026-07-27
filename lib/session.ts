@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export type Session = {
@@ -16,6 +17,10 @@ const cookieName =
   process.env.NODE_ENV === "production"
     ? "__Host-family-loan-session-v2"
     : "family-loan-session-v2";
+const sessionCookieNames = [
+  "family-loan-session-v2",
+  "__Host-family-loan-session-v2",
+] as const;
 
 function key() {
   const value = process.env.SESSION_SECRET;
@@ -78,7 +83,21 @@ export async function getSession(): Promise<Session | null> {
 }
 
 export async function clearSession() {
-  (await cookies()).delete(cookieName);
+  const store = await cookies();
+  sessionCookieNames.forEach((name) => store.delete(name));
+}
+
+export function expireSessionCookies(response: NextResponse) {
+  sessionCookieNames.forEach((name) => {
+    response.cookies.set(name, "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: name.startsWith("__Host-"),
+      path: "/",
+      expires: new Date(0),
+      maxAge: 0,
+    });
+  });
 }
 
 export async function requireSession() {
