@@ -142,7 +142,9 @@ export default function Home() {
 
       <footer className="landing-footer container">
         <span>© 2026 KinLedger</span>
-        <span>Private by design · Clear by default · <Link href="/privacy">Privacy</Link></span>
+        <span className="footer-links">
+          Private by design · Clear by default · <Link href="/guide">User guide</Link> · <Link href="/privacy">Privacy</Link>
+        </span>
       </footer>
     </main>
   );
