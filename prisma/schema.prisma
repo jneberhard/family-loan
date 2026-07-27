@@ -55,6 +55,7 @@ model User {
   lockedUntil         DateTime?
   mustChangePassword  Boolean      @default(false)
   lastLoginAt         DateTime?
+  deletedAt           DateTime?
   auditLogs           AuditLog[]   @relation("AuditActor")
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
@@ -64,20 +65,23 @@ model User {
 }
 
 model LoanAccount {
-  id           String        @id @default(cuid())
-  name         String
-  relationship String?       @default("Child")
-  email        String
-  annualRate   Decimal       @db.Decimal(6, 3)
-  familyId     String
-  family       Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  childUserId  String?       @unique
-  childUser    User?         @relation("ChildLogin", fields: [childUserId], references: [id], onDelete: SetNull)
-  transactions LedgerEntry[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  name                  String
+  relationship          String?       @default("Child")
+  email                 String
+  annualRate            Decimal       @db.Decimal(6, 3)
+  familyId              String
+  family                Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  childUserId           String?       @unique
+  childUser             User?         @relation("ChildLogin", fields: [childUserId], references: [id], onDelete: SetNull)
+  transactions          LedgerEntry[]
+  balanceReminderDay    Int?
+  lastBalanceReminderAt DateTime?
+  deletedAt             DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
-  @@index([familyId])
+  @@index([familyId, deletedAt])
 }
 
 model LedgerEntry {

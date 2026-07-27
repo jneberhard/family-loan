@@ -13,7 +13,9 @@ export type Session = {
 };
 
 const cookieName =
-  process.env.NODE_ENV === "production" ? "__Host-family-loan-session" : "family-loan-session";
+  process.env.NODE_ENV === "production"
+    ? "__Host-family-loan-session-v2"
+    : "family-loan-session-v2";
 
 function key() {
   const value = process.env.SESSION_SECRET;
@@ -36,7 +38,6 @@ export async function createSession(session: Session) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24,
   });
 }
 
@@ -55,11 +56,12 @@ export async function getSession(): Promise<Session | null> {
         familyId: true,
         sessionVersion: true,
         mustChangePassword: true,
+        deletedAt: true,
         family: { select: { approvalStatus: true } },
         childAccount: { select: { id: true } },
       },
     });
-    if (!user || user.sessionVersion !== payload.sessionVersion || user.role !== payload.role) return null;
+    if (!user || user.deletedAt || user.sessionVersion !== payload.sessionVersion || user.role !== payload.role) return null;
     if (user.role !== "SUPER_USER" && user.family?.approvalStatus !== "APPROVED") return null;
     return {
       userId: user.id,

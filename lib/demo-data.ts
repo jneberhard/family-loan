@@ -7,6 +7,7 @@ export type DemoChild = {
   email: string;
   purpose: string;
   rate: number;
+  balanceReminderDay?: number | null;
   accent: string;
   entries: LedgerItem[];
 };

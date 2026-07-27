@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const session = await requireAdmin();
     const body = await request.json();
     const account = await prisma.loanAccount.findFirst({
-      where: { id: body.accountId, familyId: session.familyId },
+      where: { id: body.accountId, familyId: session.familyId, deletedAt: null },
     });
     if (!account) return NextResponse.json({ error: "Account not found." }, { status: 404 });
 

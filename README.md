@@ -7,8 +7,9 @@ administrators; children receive read-only access to their own account.
 ## What is included
 
 - Super-user, parent, and child sign-in with secure HTTP-only session cookies
-- 24-hour, database-revocable sessions and forced password changes for temporary credentials
+- Browser-session, database-revocable sign-in with a 24-hour safety ceiling and forced password changes for temporary credentials
 - Durable account lockout after repeated failed sign-in attempts
+- Show/hide controls on sign-in, registration, temporary-password, and password-change fields
 - Server-enforced `SUPER_USER`, `ADMIN`, and `CHILD` permissions
 - Public “Become a parent lender” application with approval-required access
 - Super-user console for approving or declining parent-lender applications
@@ -21,8 +22,11 @@ administrators; children receive read-only access to their own account.
 - Audit records for security-sensitive family, access, APR, interest, and ledger changes
 - Interest rate captured on every applicable ledger line
 - Parent-controlled, effective-dated APR changes across a child's entire loan ledger
+- Parent editing and recoverable removal of APR-change dates and rates
 - Exact day-count interest calculation with duplicate-posting protection
 - Working Family Access panel for reviewing read-only child membership
+- Family Access editing and recoverable removal for child and co-parent accounts
+- Parent-triggered current-balance emails and per-child monthly email reminders
 - Working family settings for workspace name and monthly interest-posting day
 - Live loan snapshot progress derived from posted loans and payments
 - Accessible pop-out contact form with server-side validation and Resend-ready delivery
@@ -85,9 +89,12 @@ The application now lives directly in this folder; there is no second nested
    RESEND_API_KEY="re_..."
    RESEND_FROM_EMAIL="KinLedger <onboarding@resend.dev>"
    CONTACT_TO_EMAIL="jreberhard3@gmail.com"
+   CRON_SECRET="a-second-long-random-secret"
+   REMINDER_TIME_ZONE="America/Denver"
    ```
 
-   Resend test mode can send from `onboarding@resend.dev` to the email address
+   The same Resend configuration sends child balance emails. Resend test mode
+   can send from `onboarding@resend.dev` only to the email address
    associated with the Resend account. Before sending to other recipients,
    verify a domain in Resend and update `RESEND_FROM_EMAIL`.
 
@@ -140,7 +147,7 @@ Change or remove these demo passwords before using real family data.
 
 An approved parent can open **Family Access** from the dashboard and select
 **Add co-parent**. The parent supplies the co-parent's name, email address, and
-a temporary password of at least 16 characters.
+a temporary password of at least 12 characters.
 
 Co-parents are family administrators. Either parent can create child accounts,
 add, edit, or remove ledger transactions, change APRs, calculate interest, and
@@ -163,9 +170,28 @@ Create a Resend API key with sending-only access and store it in
 `RESEND_API_KEY`. Also add these variables to the Vercel project for Production,
 Preview, and Development before deploying.
 
+## Balance emails and monthly reminders
+
+A parent administrator can select **Email balance** on a child account. The
+confirmation panel shows the recipient, current ledger balance, and APR before
+the parent sends. The email includes only the current balance and APR, plus a
+sign-in link; it does not include the full ledger.
+
+The same panel can schedule an automatic email for day 1 through 28 of every
+month or turn automatic reminders off. Vercel calls
+`/api/cron/balance-reminders` once daily using the schedule in `vercel.json`.
+The route requires `CRON_SECRET`, evaluates the configured
+`REMINDER_TIME_ZONE`, records successful delivery, and skips duplicate sends
+for the same child and date.
+
+Add `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `CRON_SECRET`,
+`REMINDER_TIME_ZONE`, and the production `NEXT_PUBLIC_APP_URL` to the Vercel
+Production environment. Verify a sending domain in Resend before emailing
+children at addresses other than the Resend account owner.
+
 Super-user accounts are not publicly creatable. Provision them through the seed
 process or the dedicated production command. Set `SUPER_USER_NAME`,
-`SUPER_USER_EMAIL`, and a unique 16+ character `SUPER_USER_PASSWORD`, then run:
+`SUPER_USER_EMAIL`, and a unique 12+ character `SUPER_USER_PASSWORD`, then run:
 
 ```bash
 pnpm db:create-super
@@ -207,8 +233,13 @@ balance intervals retain their historical APR, while all outstanding and future
 loan balances for that child use the new APR from the selected date forward.
 
 The **Family Access** control lists every child account and its read-only login
-status. **Settings** lets the parent rename the family workspace and choose the
-monthly interest-posting day from 1 through 28.
+status. Parent administrators can edit child and co-parent names and emails,
+issue replacement temporary passwords, or remove their access. Removed child
+ledgers and account audit history are retained rather than permanently deleted.
+A co-parent cannot remove their own account or the family's last administrator.
+**Settings** lets the parent rename the family workspace and choose the
+monthly interest-posting day from 1 through 28. The next-posting dashboard card
+also provides a direct **Change posting day** control for parent administrators.
 
 For production automation, connect a Vercel Cron job to the interest endpoint
 or a dedicated scheduled route. Keep the posting operation idempotent.
@@ -263,10 +294,12 @@ only a convenience; child accounts cannot call write endpoints successfully.
 
 ## Security and privacy
 
-- Passwords are hashed with bcrypt and new passwords require at least 16 characters.
+- Passwords are hashed with bcrypt and new passwords require at least 12 characters.
 - Five failed sign-in attempts lock the account for 15 minutes.
-- Signed HTTP-only sessions expire after 24 hours. Password changes increment a
-  database session version, immediately invalidating other sessions.
+- Signed HTTP-only cookies are browser-session cookies, so closing the browser
+  session signs the user out. Tokens also expire after 24 hours as a safety
+  ceiling. Password changes increment a database session version, immediately
+  invalidating other sessions.
 - Production cookies use the `__Host-` prefix, `Secure`, `SameSite=Lax`, and path `/`.
 - Mutating API requests reject cross-site browser origins.
 - Security headers restrict framing, content types, referrers, browser features,

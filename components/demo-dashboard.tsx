@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   LockKeyhole,
   Menu,
+  Mail,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -34,6 +35,7 @@ import {
 } from "lucide-react";
 import { demoChildren, type DemoChild } from "@/lib/demo-data";
 import { calculateAprInterest, calculateRunningLedger, type LedgerItem } from "@/lib/finance";
+import { PasswordInput } from "@/components/password-input";
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -69,7 +71,7 @@ function daysUntil(isoDate: string) {
 }
 
 type Role = "parent" | "child";
-type Modal = "entry" | "edit" | "child" | "coparent" | "interest" | "rate" | "access" | "settings" | null;
+type Modal = "entry" | "edit" | "editRate" | "child" | "editChild" | "coparent" | "editCoparent" | "interest" | "rate" | "balanceEmail" | "access" | "settings" | null;
 type FamilyAdmin = {
   id: string;
   name: string;
@@ -84,6 +86,7 @@ const emptyChild: DemoChild = {
   email: "",
   purpose: "Create the first child account to begin",
   rate: 0,
+  balanceReminderDay: null,
   accent: "#81C784",
   entries: [],
 };
@@ -118,8 +121,11 @@ export function DemoDashboard({
   const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
   const [editingEntry, setEditingEntry] = useState<LedgerItem | null>(null);
+  const [editingChild, setEditingChild] = useState<DemoChild | null>(null);
+  const [editingAdmin, setEditingAdmin] = useState<FamilyAdmin | null>(null);
   const [postingDay, setPostingDay] = useState(interestPostingDay);
   const [workspaceName, setWorkspaceName] = useState(familyName);
+  const [sendingBalanceEmail, setSendingBalanceEmail] = useState(false);
 
   const selected = children.find((child) => child.id === selectedId) ?? children[0] ?? emptyChild;
   const ledgers = useMemo(
@@ -258,28 +264,93 @@ export function DemoDashboard({
   }
 
   async function removeEntry(entry: LedgerItem) {
-    if (!window.confirm(`Remove this ${entry.type.toLowerCase()} entry from the ledger? This cannot be undone.`)) return;
+    if (!window.confirm(`Remove this ${entry.type.toLowerCase()} entry from the active ledger? It will no longer affect the balance or interest calculations.`)) return false;
+    let serverCurrentApr: number | undefined;
     if (!demoMode) {
       const response = await fetch(`/api/transactions/${entry.id}`, { method: "DELETE" });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         notify(result.error ?? "Unable to remove the transaction.");
-        return;
+        return false;
       }
+      if (result.currentApr !== undefined) serverCurrentApr = Number(result.currentApr);
     }
     setChildren((current) =>
       current.map((child) =>
         child.id === selected.id
-          ? { ...child, entries: child.entries.filter((item) => item.id !== entry.id) }
+          ? (() => {
+              const entries = child.entries.filter((item) => item.id !== entry.id);
+              const latestRate = [...entries]
+                .filter((item) => item.type === "Rate change" && item.rate !== null)
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .at(-1);
+              const originalRate = [...entries]
+                .filter((item) => item.type === "Loan" && item.rate !== null)
+                .sort((a, b) => a.date.localeCompare(b.date))[0]?.rate;
+              return {
+                ...child,
+                rate:
+                  entry.type === "Rate change"
+                    ? (serverCurrentApr ?? latestRate?.rate ?? originalRate ?? child.rate)
+                    : child.rate,
+                entries,
+              };
+            })()
           : child,
       ),
     );
     notify("Transaction removed");
+    return true;
   }
 
   function editEntry(entry: LedgerItem) {
     setEditingEntry(entry);
-    setModal("edit");
+    setModal(entry.type === "Rate change" ? "editRate" : "edit");
+  }
+
+  async function updateRateChange(formData: FormData) {
+    if (!editingEntry) return;
+    const effectiveDate = String(formData.get("effectiveDate"));
+    const apr = Number(formData.get("apr"));
+    let currentApr = selected.rate;
+    let description = `APR changed to ${apr.toFixed(3)}%`;
+
+    if (!demoMode) {
+      const response = await fetch(`/api/transactions/${editingEntry.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ effectiveAt: effectiveDate, rate: apr }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to update the APR change.");
+        return;
+      }
+      currentApr = Number(result.currentApr);
+      description = result.description;
+    }
+
+    setChildren((current) =>
+      current.map((child) => {
+        if (child.id !== selected.id) return child;
+        const entries = child.entries.map((entry) =>
+          entry.id === editingEntry.id
+            ? { ...entry, date: effectiveDate, rate: apr, description }
+            : entry,
+        );
+        if (demoMode) {
+          const latest = [...entries]
+            .filter((entry) => entry.type === "Rate change" && entry.rate !== null)
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .at(-1);
+          currentApr = latest?.rate ?? child.rate;
+        }
+        return { ...child, rate: currentApr, entries };
+      }),
+    );
+    setEditingEntry(null);
+    setModal(null);
+    notify(`APR change updated to ${displayDate(effectiveDate)}`);
   }
 
   async function addChild(formData: FormData) {
@@ -318,6 +389,66 @@ export function DemoDashboard({
     setSelectedId(id);
     setModal(null);
     notify(`${name} was added`);
+  }
+
+  async function updateChildAccount(formData: FormData) {
+    if (!editingChild) return;
+    const name = String(formData.get("name")).trim();
+    const email = String(formData.get("email")).trim().toLowerCase();
+    const purpose = String(formData.get("purpose")).trim();
+
+    if (!demoMode) {
+      const response = await fetch(`/api/children/${editingChild.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          relationship: purpose,
+          temporaryPassword: formData.get("temporaryPassword"),
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to update the child account.");
+        return;
+      }
+    }
+
+    setChildren((current) =>
+      current.map((child) =>
+        child.id === editingChild.id
+          ? {
+              ...child,
+              name,
+              email,
+              purpose,
+              initials: name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+            }
+          : child,
+      ),
+    );
+    setEditingChild(null);
+    setModal("access");
+    notify(`${name}'s account was updated`);
+  }
+
+  async function removeChildAccount(child: DemoChild) {
+    if (!window.confirm(`Remove ${child.name}'s access and hide this child account? Its ledger and audit history will be preserved.`)) return;
+    if (!demoMode) {
+      const response = await fetch(`/api/children/${child.id}`, { method: "DELETE" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to remove the child account.");
+        return;
+      }
+    }
+    const remaining = children.filter((item) => item.id !== child.id);
+    setChildren(remaining);
+    if (selectedId === child.id) setSelectedId(remaining[0]?.id ?? "");
+    setEditingChild(null);
+    setModal("access");
+    notify(`${child.name}'s account was removed`);
   }
 
   async function changeApr(formData: FormData) {
@@ -425,6 +556,50 @@ export function DemoDashboard({
     notify(`${name} now has full family administrator access`);
   }
 
+  async function updateCoParent(formData: FormData) {
+    if (!editingAdmin) return;
+    const name = String(formData.get("name")).trim();
+    const email = String(formData.get("email")).trim().toLowerCase();
+    if (!demoMode) {
+      const response = await fetch(`/api/family/co-parents/${editingAdmin.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          temporaryPassword: formData.get("temporaryPassword"),
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to update the co-parent.");
+        return;
+      }
+    }
+    setAdmins((current) =>
+      current.map((admin) => admin.id === editingAdmin.id ? { ...admin, name, email } : admin),
+    );
+    setEditingAdmin(null);
+    setModal("access");
+    notify(`${name}'s administrator account was updated`);
+  }
+
+  async function removeCoParent(admin: FamilyAdmin) {
+    if (!window.confirm(`Remove ${admin.name}'s administrator access? They will be signed out and can no longer manage this family.`)) return;
+    if (!demoMode) {
+      const response = await fetch(`/api/family/co-parents/${admin.id}`, { method: "DELETE" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to remove the co-parent.");
+        return;
+      }
+    }
+    setAdmins((current) => current.filter((item) => item.id !== admin.id));
+    setEditingAdmin(null);
+    setModal("access");
+    notify(`${admin.name}'s administrator access was removed`);
+  }
+
   async function postInterest() {
     let amount = interestPeriod.calculation.total;
     let description = `APR interest · ${interestPeriod.periodStart} to ${interestPeriod.periodEnd} · ${interestPeriod.calculation.segments.length} balance period${interestPeriod.calculation.segments.length === 1 ? "" : "s"}`;
@@ -463,6 +638,55 @@ export function DemoDashboard({
     );
     setModal(null);
     notify(`${money.format(amount)} APR interest posted`);
+  }
+
+  async function sendCurrentBalance() {
+    setSendingBalanceEmail(true);
+    if (demoMode) {
+      await new Promise((resolve) => window.setTimeout(resolve, 450));
+      setSendingBalanceEmail(false);
+      notify(`Demo balance email prepared for ${selected.email}`);
+      return;
+    }
+    const response = await fetch(`/api/accounts/${selected.id}/balance-email`, {
+      method: "POST",
+    });
+    const result = await response.json().catch(() => ({}));
+    setSendingBalanceEmail(false);
+    if (!response.ok) {
+      notify(result.error ?? "Unable to send the balance email.");
+      return;
+    }
+    notify(`Current balance emailed to ${selected.email}`);
+  }
+
+  async function saveBalanceReminder(formData: FormData) {
+    const rawDay = String(formData.get("reminderDay") ?? "");
+    let reminderDay = rawDay ? Number(rawDay) : null;
+    if (!demoMode) {
+      const response = await fetch(`/api/accounts/${selected.id}/balance-email`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reminderDay }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        notify(result.error ?? "Unable to save the reminder schedule.");
+        return;
+      }
+      reminderDay = result.balanceReminderDay;
+    }
+    setChildren((current) =>
+      current.map((child) =>
+        child.id === selected.id ? { ...child, balanceReminderDay: reminderDay } : child,
+      ),
+    );
+    setModal(null);
+    notify(
+      reminderDay
+        ? `Monthly balance reminder scheduled for day ${reminderDay}`
+        : "Monthly balance reminder turned off",
+    );
   }
 
   function exportLedger() {
@@ -594,6 +818,7 @@ export function DemoDashboard({
             </div>
             <div className="account-actions">
               <button className="button button-soft" onClick={exportLedger}><Download size={17} /> Export</button>
+              {role === "parent" && <button className="button button-soft" onClick={() => setModal("balanceEmail")}><Mail size={17} /> Email balance</button>}
               {role === "parent" && <button className="button button-soft" onClick={() => setModal("rate")}><Settings size={17} /> Change APR</button>}
               {role === "parent" && <button className="button button-gold" onClick={() => setModal("interest")}><CircleDollarSign size={17} /> Calculate interest</button>}
             </div>
@@ -616,7 +841,9 @@ export function DemoDashboard({
               <div className="metric-icon gold"><CalendarDays size={21} /></div>
               <span>Next interest posting</span>
               <strong>{new Date(`${interestPeriod.periodEnd}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</strong>
-              <small>Admin-selected monthly date</small>
+              {role === "parent"
+                ? <button className="metric-edit" onClick={() => setModal("settings")}><Pencil size={12} /> Change posting day</button>
+                : <small>Admin-selected monthly date</small>}
             </article>
             <article className="metric-card">
               <div className="metric-icon silver"><ReceiptText size={21} /></div>
@@ -650,10 +877,10 @@ export function DemoDashboard({
                         <td><strong>{money.format(entry.balance)}</strong></td>
                         {role === "parent" && (
                           <td>
-                            {entry.type === "Rate change" ? <span className="rate-managed">APR control</span> : <div className="transaction-actions">
+                            <div className="transaction-actions">
                               <button onClick={() => editEntry(entry)} aria-label={`Edit ${entry.description}`} title="Edit transaction"><Pencil size={14} /></button>
                               <button className="danger" onClick={() => removeEntry(entry)} aria-label={`Remove ${entry.description}`} title="Remove transaction"><Trash2 size={14} /></button>
-                            </div>}
+                            </div>
                           </td>
                         )}
                       </tr>
@@ -725,6 +952,28 @@ export function DemoDashboard({
         </Modal>
       )}
 
+      {modal === "editRate" && editingEntry && (
+        <Modal title="Edit APR change" subtitle="Correct the rate or its effective date. Interest calculations will follow the revised timeline." onClose={() => { setEditingEntry(null); setModal(null); }}>
+          <form action={updateRateChange} className="modal-form">
+            <div className="field-grid">
+              <label>APR (%)<input name="apr" type="number" min="0" max="100" step="0.001" defaultValue={editingEntry.rate ?? selected.rate} required /></label>
+              <label>Effective date<input name="effectiveDate" type="date" defaultValue={editingEntry.date} max={new Date().toLocaleDateString("en-CA")} required /></label>
+            </div>
+            <div className="invite-note"><CalendarDays size={16} /> Changing this date recalculates which balance periods use this APR. Earlier ledger history remains unchanged.</div>
+            <div className="modal-actions">
+              <button type="button" className="button button-danger" onClick={async () => {
+                if (await removeEntry(editingEntry)) {
+                  setEditingEntry(null);
+                  setModal(null);
+                }
+              }}><Trash2 size={16} /> Remove rate change</button>
+              <button type="button" className="button button-soft" onClick={() => { setEditingEntry(null); setModal(null); }}>Cancel</button>
+              <button className="button button-primary">Save APR change</button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
       {modal === "child" && (
         <Modal title="Add a child account" subtitle="Create their ledger and invite them to a read-only view." onClose={() => setModal(null)}>
           <form action={addChild} className="modal-form">
@@ -732,9 +981,25 @@ export function DemoDashboard({
             <label>Email address<input name="email" type="email" placeholder="alex@example.com" required /></label>
             <label>Loan purpose<input name="purpose" placeholder="Home renovation" required /></label>
             <label>Annual interest rate (%)<input name="rate" type="number" min="0" step="0.001" defaultValue="3.75" required /></label>
-            {!demoMode && <label>Temporary password<input name="temporaryPassword" type="password" minLength={16} placeholder="16+ characters" required /></label>}
+            {!demoMode && <label>Temporary password<PasswordInput name="temporaryPassword" minLength={12} placeholder="12+ characters" required /></label>}
             <div className="invite-note"><LockKeyhole size={16} /> The child will only see their own account and cannot make changes.</div>
             <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal(null)}>Cancel</button><button className="button button-primary">Create account</button></div>
+          </form>
+        </Modal>
+      )}
+
+      {modal === "editChild" && editingChild && (
+        <Modal title="Edit child account" subtitle="Update the child's profile or issue a replacement temporary password." onClose={() => { setEditingChild(null); setModal("access"); }}>
+          <form action={updateChildAccount} className="modal-form">
+            <label>Full name<input name="name" defaultValue={editingChild.name} required /></label>
+            <label>Email address<input name="email" type="email" defaultValue={editingChild.email} required /></label>
+            <label>Loan purpose<input name="purpose" defaultValue={editingChild.purpose} required /></label>
+            {!demoMode && <label>Replacement temporary password <small className="field-help">Optional. If entered, the child must change it at their next sign-in.</small><PasswordInput name="temporaryPassword" minLength={12} placeholder="Leave blank to keep current password" /></label>}
+            <div className="modal-actions">
+              <button type="button" className="button button-danger" onClick={() => removeChildAccount(editingChild)}><Trash2 size={16} /> Remove child</button>
+              <button type="button" className="button button-soft" onClick={() => { setEditingChild(null); setModal("access"); }}>Cancel</button>
+              <button className="button button-primary">Save child account</button>
+            </div>
           </form>
         </Modal>
       )}
@@ -764,7 +1029,15 @@ export function DemoDashboard({
               <div className="access-row admin-access" key={admin.id}>
                 <i>{admin.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</i>
                 <span><strong>{admin.name}{admin.isCurrent ? " (you)" : ""}</strong><small>{admin.email}</small></span>
-                <b><ShieldCheck size={13} /> Full access</b>
+                <div className="access-row-controls">
+                  <b><ShieldCheck size={13} /> Full access</b>
+                  {!admin.isCurrent && (
+                    <div className="access-row-actions">
+                      <button onClick={() => { setEditingAdmin(admin); setModal("editCoparent"); }} aria-label={`Edit ${admin.name}`}><Pencil size={14} /> Edit</button>
+                      <button className="danger" onClick={() => removeCoParent(admin)} aria-label={`Remove ${admin.name}`}><Trash2 size={14} /> Remove</button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
             <div className="access-section-title child-access-title"><span>Child accounts</span></div>
@@ -772,7 +1045,13 @@ export function DemoDashboard({
               <div className="access-row" key={child.id}>
                 <i style={{ background: `${child.accent}22`, color: child.accent }}>{child.initials}</i>
                 <span><strong>{child.name}</strong><small>{child.email}</small></span>
-                <b><LockKeyhole size={13} /> Read only</b>
+                <div className="access-row-controls">
+                  <b><LockKeyhole size={13} /> Read only</b>
+                  <div className="access-row-actions">
+                    <button onClick={() => { setEditingChild(child); setModal("editChild"); }} aria-label={`Edit ${child.name}`}><Pencil size={14} /> Edit</button>
+                    <button className="danger" onClick={() => removeChildAccount(child)} aria-label={`Remove ${child.name}`}><Trash2 size={14} /> Remove</button>
+                  </div>
+                </div>
               </div>
             ))}
             {!children.length && <p className="empty-access">No child accounts have been created yet.</p>}
@@ -786,9 +1065,24 @@ export function DemoDashboard({
           <form action={addCoParent} className="modal-form">
             <label>Full name<input name="name" placeholder="Morgan Bennett" required /></label>
             <label>Email address<input name="email" type="email" placeholder="morgan@example.com" required /></label>
-            <label>Temporary password<input name="temporaryPassword" type="password" minLength={16} placeholder="16+ characters" required /></label>
+            <label>Temporary password<PasswordInput name="temporaryPassword" minLength={12} placeholder="12+ characters" required /></label>
             <div className="invite-note"><ShieldCheck size={16} /> This co-parent can add, edit, and remove transactions, create child accounts, change APRs, post interest, and manage family settings.</div>
             <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal("access")}>Back</button><button className="button button-primary">Create co-parent account</button></div>
+          </form>
+        </Modal>
+      )}
+
+      {modal === "editCoparent" && editingAdmin && (
+        <Modal title="Edit co-parent" subtitle="Update this administrator's account or issue a replacement temporary password." onClose={() => { setEditingAdmin(null); setModal("access"); }}>
+          <form action={updateCoParent} className="modal-form">
+            <label>Full name<input name="name" defaultValue={editingAdmin.name} required /></label>
+            <label>Email address<input name="email" type="email" defaultValue={editingAdmin.email} required /></label>
+            <label>Replacement temporary password <small className="field-help">Optional. If entered, they must change it at their next sign-in.</small><PasswordInput name="temporaryPassword" minLength={12} placeholder="Leave blank to keep current password" /></label>
+            <div className="modal-actions">
+              <button type="button" className="button button-danger" onClick={() => removeCoParent(editingAdmin)}><Trash2 size={16} /> Remove co-parent</button>
+              <button type="button" className="button button-soft" onClick={() => { setEditingAdmin(null); setModal("access"); }}>Cancel</button>
+              <button className="button button-primary">Save co-parent</button>
+            </div>
           </form>
         </Modal>
       )}
@@ -816,6 +1110,38 @@ export function DemoDashboard({
           </div>
           <p className="calculation-note"><HandCoins size={17} /> Interest is APR ÷ 365 for each day. A loan starts accruing on its loan date; a payment or gift reduces the interest-bearing balance on its effective date, including partial months.</p>
           <div className="modal-actions"><button className="button button-soft" onClick={() => setModal(null)}>Reset</button><button className="button button-primary" disabled={interestPeriod.calculation.total <= 0} onClick={postInterest}>Calculate & post APR interest</button></div>
+        </Modal>
+      )}
+
+      {modal === "balanceEmail" && (
+        <Modal title={`Email ${selected.name.split(" ")[0]}'s balance`} subtitle="Send the current balance now or schedule a monthly reminder." onClose={() => setModal(null)}>
+          <div className="balance-email-panel">
+            <div className="balance-email-summary">
+              <span>Recipient</span><strong>{selected.email}</strong>
+              <span>Current balance</span><strong>{money.format(selectedBalance)}</strong>
+              <span>Current rate</span><strong>{selected.rate.toFixed(3)}% APR</strong>
+            </div>
+            <div className="balance-email-now">
+              <div><strong>Send now</strong><p>Email the balance shown above immediately.</p></div>
+              <button className="button button-gold" onClick={sendCurrentBalance} disabled={sendingBalanceEmail}>
+                <Mail size={16} /> {sendingBalanceEmail ? "Sending…" : "Send current balance"}
+              </button>
+            </div>
+            <form action={saveBalanceReminder} className="modal-form balance-reminder-form">
+              <label>
+                Monthly reminder day
+                <select name="reminderDay" defaultValue={selected.balanceReminderDay ?? ""}>
+                  <option value="">Off — do not send automatically</option>
+                  {Array.from({ length: 28 }, (_, index) => index + 1).map((day) => (
+                    <option key={day} value={day}>Day {day} of every month</option>
+                  ))}
+                </select>
+                <small className="field-help">Days 1–28 are available so the reminder can run every month.</small>
+              </label>
+              <div className="invite-note"><ShieldCheck size={16} /> Only this child receives the email. It contains their current balance and APR, not the full ledger.</div>
+              <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal(null)}>Cancel</button><button className="button button-primary">Save reminder</button></div>
+            </form>
+          </div>
         </Modal>
       )}
     </main>

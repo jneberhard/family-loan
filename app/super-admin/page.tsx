@@ -14,8 +14,8 @@ export default async function SuperAdminPage() {
 
   const families = await prisma.family.findMany({
     include: {
-      users: { where: { role: "ADMIN" }, select: { name: true, email: true } },
-      _count: { select: { accounts: true } },
+      users: { where: { role: "ADMIN", deletedAt: null }, select: { name: true, email: true } },
+      _count: { select: { accounts: { where: { deletedAt: null } } } },
     },
     orderBy: [{ approvalStatus: "asc" }, { createdAt: "desc" }],
   });

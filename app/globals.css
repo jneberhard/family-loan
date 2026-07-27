@@ -62,6 +62,8 @@ a { color: inherit; text-decoration: none; }
 .button-soft:hover { background: #e8eeea; }
 .button-gold { background: var(--gold); color: #292816; box-shadow: 0 8px 24px rgba(212, 175, 55, .2); }
 .button-gold:hover { background: #c59f28; }
+.button-danger { color: #9f312b; background: #fff2f1; border-color: #efcac6; }
+.button-danger:hover { color: #84251f; background: #ffe8e5; border-color: #e5afa9; }
 .button-large { padding: 14px 20px; border-radius: 13px; font-size: 14px; }
 .icon-button {
   width: 40px;
@@ -263,6 +265,24 @@ a { color: inherit; text-decoration: none; }
   height: 45px; border-radius: 10px; border: 1px solid var(--border); padding: 0 13px; outline: none; background: white;
 }
 .login-form input:focus, .modal-form input:focus, .modal-form select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,125,50,.09); }
+.password-input-wrap { position: relative; display: block; width: 100%; }
+.password-input-wrap input { width: 100%; padding-right: 46px; }
+.password-visibility {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  color: var(--slate);
+  background: transparent;
+  cursor: pointer;
+}
+.password-visibility:hover, .password-visibility:focus-visible { color: var(--green); background: #edf6ee; outline: none; }
 .login-form select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,125,50,.09); }
 .login-form .button { margin-top: 5px; }
 .login-signup { width: 100%; margin-top: 10px; }
@@ -378,13 +398,29 @@ a { color: inherit; text-decoration: none; }
 .account-heading { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 22px; }
 .account-heading h2 { font-family: var(--font-serif), Georgia, serif; font-size: 30px; margin: 5px 0 2px; font-weight: 600; }
 .account-heading p { color: var(--slate); font-size: 10px; margin: 0; }
-.account-actions { display: flex; gap: 9px; }
+.account-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
 .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; margin-bottom: 16px; }
 .metric-card { background: white; border: 1px solid var(--border); border-radius: 14px; padding: 17px; display: grid; grid-template-columns: 38px 1fr; column-gap: 12px; box-shadow: 0 7px 25px rgba(36,62,44,.035); }
 .metric-card > span { align-self: end; color: var(--slate); font-size: 9px; font-weight: 700; }
 .metric-card > strong { grid-column: 2; font-size: 20px; letter-spacing: -.035em; line-height: 1.2; margin-top: 3px; }
 .metric-card > small { grid-column: 2; margin-top: 6px; color: var(--slate); font-size: 8px; display: flex; align-items: center; gap: 4px; }
 .metric-card > small svg { color: var(--green); }
+.metric-edit {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding: 0;
+  border: 0;
+  color: var(--green);
+  background: transparent;
+  font-size: 8px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.metric-edit:hover { text-decoration: underline; text-underline-offset: 2px; }
 .metric-icon { grid-row: 1 / 4; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: #eaf4eb; color: var(--green); }
 .metric-icon.sage { background: #f1f8f1; color: #62a568; }
 .metric-icon.gold { background: #faf6e8; color: #af8c1b; }
@@ -455,6 +491,7 @@ a { color: inherit; text-decoration: none; }
 .field-help { color: var(--slate); font-size: 8px; font-weight: 550; line-height: 1.45; }
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 9px; padding-top: 7px; }
+.modal-actions .button-danger { margin-right: auto; }
 .invite-note, .calculation-note { background: #f1f6f2; color: var(--slate); border-radius: 10px; padding: 11px; display: flex; gap: 8px; align-items: center; font-size: 9px; line-height: 1.5; }
 .invite-note svg, .calculation-note svg { color: var(--green); flex: none; }
 .rate-preview { padding: 15px 17px; border: 1px solid #dce9dd; border-radius: 12px; background: #f3f8f4; display: flex; align-items: center; justify-content: space-between; color: var(--slate); font-size: 10px; }
@@ -466,11 +503,16 @@ a { color: inherit; text-decoration: none; }
 .access-row { display: grid; grid-template-columns: 38px 1fr auto; gap: 11px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
 .access-row > i { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; font-size: 10px; font-style: normal; font-weight: 850; }
 .admin-access > i { background: #eaf4eb; color: var(--green); }
-.admin-access > b { background: #f8f3df; color: #8c711c; }
+.admin-access .access-row-controls > b { background: #f8f3df; color: #8c711c; }
 .access-row > span { display: grid; gap: 3px; min-width: 0; }
 .access-row strong { font-size: 11px; }
 .access-row small { color: var(--slate); font-size: 9px; overflow: hidden; text-overflow: ellipsis; }
-.access-row > b { display: flex; gap: 5px; align-items: center; color: var(--green); background: #edf5ee; border-radius: 999px; padding: 6px 8px; font-size: 8px; white-space: nowrap; }
+.access-row-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.access-row-controls > b { display: flex; gap: 5px; align-items: center; color: var(--green); background: #edf5ee; border-radius: 999px; padding: 6px 8px; font-size: 8px; white-space: nowrap; }
+.access-row-actions { display: flex; gap: 5px; }
+.access-row-actions button { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 8px; color: var(--slate); background: white; font-size: 8px; font-weight: 800; cursor: pointer; }
+.access-row-actions button:hover { color: var(--green); border-color: #b8d2ba; background: #f1f7f2; }
+.access-row-actions button.danger:hover { color: #b13d35; border-color: #edc4c0; background: #fff4f3; }
 .empty-access { margin: 8px 0; color: var(--slate); text-align: center; font-size: 10px; }
 .interest-summary { margin: 22px; display: grid; gap: 2px; background: #f7f9f8; border-radius: 13px; padding: 8px 16px; }
 .interest-summary > div { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 10px; }
@@ -478,6 +520,14 @@ a { color: inherit; text-decoration: none; }
 .interest-summary span { color: var(--slate); }
 .interest-summary .interest-total { font-size: 13px; color: var(--green); }
 .calculation-note { margin: -6px 22px 12px; }
+.balance-email-panel { padding: 22px; display: grid; gap: 16px; }
+.balance-email-summary { display: grid; grid-template-columns: 1fr auto; gap: 10px 20px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: #f7f9f8; }
+.balance-email-summary span { color: var(--slate); font-size: 10px; }
+.balance-email-summary strong { text-align: right; font-size: 11px; }
+.balance-email-now { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px; border: 1px solid #eadfb5; border-radius: 12px; background: #fdfaf0; }
+.balance-email-now strong { font-size: 11px; }
+.balance-email-now p { margin: 4px 0 0; color: var(--slate); font-size: 9px; }
+.balance-reminder-form { padding: 0; }
 .modal > .modal-actions { padding: 0 22px 22px; }
 
 @media (max-width: 1100px) {
@@ -606,4 +656,11 @@ a { color: inherit; text-decoration: none; }
   .readonly-banner { margin: 14px 16px 0; }
   .readonly-banner small { line-height: 1.4; }
   .field-grid { grid-template-columns: 1fr; }
+  .access-row { grid-template-columns: 38px 1fr; align-items: start; }
+  .access-row-controls { grid-column: 1 / 3; justify-content: space-between; }
+  .access-row-actions button { min-height: 32px; }
+  .modal-actions { flex-wrap: wrap; }
+  .modal-actions .button-danger { width: 100%; margin-right: 0; }
+  .balance-email-now { align-items: stretch; flex-direction: column; }
+  .balance-email-now .button { width: 100%; }
 }

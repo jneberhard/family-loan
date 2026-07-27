@@ -12,9 +12,9 @@ export async function POST(request: Request) {
     if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
       return NextResponse.json({ error: "Current and new passwords are required." }, { status: 400 });
     }
-    if (newPassword.length < 16) {
+    if (newPassword.length < 12) {
       return NextResponse.json(
-        { error: "Your new password must be at least 16 characters." },
+        { error: "Your new password must be at least 12 characters." },
         { status: 400 },
       );
     }

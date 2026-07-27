@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const account = await prisma.loanAccount.findFirst({
-      where: { id: accountId, familyId: session.familyId },
+      where: { id: accountId, familyId: session.familyId, deletedAt: null },
       include: {
         transactions: {
           where: { deletedAt: null },

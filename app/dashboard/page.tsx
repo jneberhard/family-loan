@@ -19,7 +19,7 @@ export default async function DashboardPage() {
           name: true,
           interestPostingDay: true,
           users: {
-            where: { role: "ADMIN" },
+            where: { role: "ADMIN", deletedAt: null },
             select: { id: true, name: true, email: true },
             orderBy: { createdAt: "asc" },
           },
@@ -29,8 +29,8 @@ export default async function DashboardPage() {
 
   const accounts = await prisma.loanAccount.findMany({
     where: session.role === "ADMIN"
-      ? { familyId: session.familyId }
-      : { id: session.accountId ?? "__none__" },
+      ? { familyId: session.familyId, deletedAt: null }
+      : { id: session.accountId ?? "__none__", deletedAt: null },
     include: {
       transactions: {
         where: { deletedAt: null },
@@ -47,6 +47,7 @@ export default async function DashboardPage() {
     email: account.email,
     purpose: account.relationship ?? "Family loan",
     rate: Number(account.annualRate),
+    balanceReminderDay: account.balanceReminderDay,
     accent: ["#2E7D32", "#D4AF37", "#81C784"][index % 3],
     entries: account.transactions.map((entry) => ({
       id: entry.id,

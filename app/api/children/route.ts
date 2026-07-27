@@ -12,8 +12,8 @@ export async function POST(request: Request) {
     if (!name || !email || annualRate === undefined || !temporaryPassword) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
-    if (String(temporaryPassword).length < 16) {
-      return NextResponse.json({ error: "Temporary password must be at least 16 characters." }, { status: 400 });
+    if (String(temporaryPassword).length < 12) {
+      return NextResponse.json({ error: "Temporary password must be at least 12 characters." }, { status: 400 });
     }
     const rate = Number(annualRate);
     if (!Number.isFinite(rate) || rate < 0 || rate > 100) {

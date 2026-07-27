@@ -11,8 +11,8 @@ async function main() {
   if (!email || !email.includes("@")) {
     throw new Error("Set SUPER_USER_EMAIL to a valid email address.");
   }
-  if (password.length < 16) {
-    throw new Error("SUPER_USER_PASSWORD must contain at least 16 characters.");
+  if (password.length < 12) {
+    throw new Error("SUPER_USER_PASSWORD must contain at least 12 characters.");
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });

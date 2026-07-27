@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/password-input";
 
 export function LoginForm() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export function LoginForm() {
       </label>
       <label>
         Password
-        <input name="password" type="password" autoComplete="current-password" placeholder="••••••••" required />
+        <PasswordInput name="password" autoComplete="current-password" placeholder="••••••••" required />
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="button button-primary button-large" disabled={loading}>

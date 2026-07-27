@@ -19,8 +19,8 @@ export async function POST(request: Request) {
     if (!email.includes("@")) {
       return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
     }
-    if (temporaryPassword.length < 16) {
-      return NextResponse.json({ error: "Temporary password must be at least 16 characters." }, { status: 400 });
+    if (temporaryPassword.length < 12) {
+      return NextResponse.json({ error: "Temporary password must be at least 12 characters." }, { status: 400 });
     }
 
     const passwordHash = await bcrypt.hash(temporaryPassword, 12);

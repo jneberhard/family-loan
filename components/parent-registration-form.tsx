@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CheckCircle2, Clock3 } from "lucide-react";
+import { PasswordInput } from "@/components/password-input";
 
 export function ParentRegistrationForm() {
   const [error, setError] = useState("");
@@ -68,7 +69,7 @@ export function ParentRegistrationForm() {
       <div className="field-grid">
         <label>
           Password
-          <input name="password" type="password" autoComplete="new-password" minLength={16} placeholder="16+ characters" required />
+          <PasswordInput name="password" autoComplete="new-password" minLength={12} placeholder="12+ characters" required />
         </label>
         <label>
           Monthly interest day
