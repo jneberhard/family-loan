@@ -958,6 +958,7 @@ export function DemoDashboard({
             <nav aria-label="Account footer">
               <span>Signed in as {viewerName}</span>
               <Link href="/guide">User guide</Link>
+              <Link href="/legal">Legal</Link>
               <Link href="/privacy">Privacy</Link>
             </nav>
           </footer>

@@ -221,7 +221,7 @@ export default async function GuidePage() {
               <li>Use a unique password and share temporary credentials through a private channel.</li>
               <li>Download the ledger periodically if your family wants an offline copy.</li>
             </ul>
-            <p className="guide-small">KinLedger helps families maintain a shared record; it does not replace legal, tax, or financial advice. Consider a qualified professional for formal loan documents or guidance specific to your family.</p>
+            <p className="guide-small">KinLedger helps families maintain a shared record; it does not replace legal, tax, or financial advice. Consult a qualified financial adviser, tax professional, or legal representative, and review the <Link href="/legal">Legal &amp; Loan Disclaimer</Link>, before relying on a family loan.</p>
           </section>
 
           <footer className="guide-footer">

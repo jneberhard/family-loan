@@ -24,6 +24,7 @@ export function ParentRegistrationForm() {
         email: data.get("email"),
         password: data.get("password"),
         interestPostingDay: data.get("interestPostingDay"),
+        legalAcknowledgment: data.get("legalAcknowledgment") === "on",
       }),
     });
     const result = await response.json().catch(() => ({}));
@@ -84,6 +85,14 @@ export function ParentRegistrationForm() {
         Submitting creates a pending parent-lender workspace. A KinLedger super user
         must approve it before you can sign in or create child accounts.
       </p>
+      <label className="legal-acknowledgment">
+        <input name="legalAcknowledgment" type="checkbox" required />
+        <span>
+          I understand KinLedger is a record-keeping tool, not a legally binding loan
+          agreement or professional advice, and I have read the{" "}
+          <Link href="/legal" target="_blank" rel="noreferrer">Legal &amp; Loan Disclaimer</Link>.
+        </span>
+      </label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button className="button button-primary button-large" disabled={loading}>
         {loading ? "Submitting application…" : "Submit for approval"}

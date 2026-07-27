@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
     const interestPostingDay = Number(body.interestPostingDay ?? 1);
+    const legalAcknowledgment = body.legalAcknowledgment === true;
 
     if (!name || !familyName || !email || !password) {
       return NextResponse.json({ error: "All required fields must be completed." }, { status: 400 });
@@ -20,6 +21,12 @@ export async function POST(request: Request) {
     }
     if (password.length < 12) {
       return NextResponse.json({ error: "Password must be at least 12 characters." }, { status: 400 });
+    }
+    if (!legalAcknowledgment) {
+      return NextResponse.json(
+        { error: "You must acknowledge the Legal & Loan Disclaimer." },
+        { status: 400 },
+      );
     }
     if (!Number.isInteger(interestPostingDay) || interestPostingDay < 1 || interestPostingDay > 28) {
       return NextResponse.json({ error: "Interest posting day must be between 1 and 28." }, { status: 400 });
