@@ -331,6 +331,10 @@ the support email address is not displayed on the privacy page.
 | `pnpm db:seed` | Replace local data with the Bennett demo |
 | `pnpm db:create-super` | Provision or rotate the production super user |
 
+If the editor reports that a newly added Prisma field does not exist after a
+schema update, run `pnpm exec prisma generate`, restart `pnpm dev`, and restart
+the editor's TypeScript server. This refreshes cached Prisma model types.
+
 ## Brand
 
 The UI follows the requested off-white, forest green, sage, warm gold, silver,
