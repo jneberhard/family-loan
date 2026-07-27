@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Send } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { CheckCircle2, Send, X } from "lucide-react";
 
-export function ContactForm() {
+function ContactForm({ defaultSubject = "General question" }: { defaultSubject?: string }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -51,7 +51,7 @@ export function ContactForm() {
       </div>
       <label>
         What can we help with?
-        <select name="subject" defaultValue="General question">
+        <select name="subject" defaultValue={defaultSubject}>
           <option>General question</option>
           <option>Parent-lender account</option>
           <option>Technical support</option>
@@ -76,5 +76,103 @@ export function ContactForm() {
         </button>
       </div>
     </form>
+  );
+}
+
+export function ContactModal({
+  triggerLabel = "Contact",
+  triggerClassName = "button button-primary",
+  defaultSubject,
+}: {
+  triggerLabel?: string;
+  triggerClassName?: string;
+  defaultSubject?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const titleId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const opener = triggerRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Tab" && modalRef.current) {
+        const focusable = Array.from(
+          modalRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]',
+          ),
+        ).filter((element) => element.tabIndex !== -1);
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      opener?.focus();
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={triggerClassName}
+        onClick={() => setOpen(true)}
+      >
+        {triggerLabel}
+      </button>
+      {open && (
+        <div
+          className="contact-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
+        >
+          <section
+            ref={modalRef}
+            className="contact-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+          >
+            <header className="contact-modal-header">
+              <div>
+                <span className="section-kicker">Contact KinLedger</span>
+                <h2 id={titleId}>How can we help?</h2>
+                <p>Send us a note and the KinLedger team will follow up.</p>
+              </div>
+              <button
+                ref={closeRef}
+                type="button"
+                className="icon-button"
+                aria-label="Close contact form"
+                onClick={() => setOpen(false)}
+              >
+                <X size={20} />
+              </button>
+            </header>
+            <ContactForm defaultSubject={defaultSubject} />
+          </section>
+        </div>
+      )}
+    </>
   );
 }

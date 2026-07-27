@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { ContactForm } from "@/components/contact-form";
+import { ContactModal } from "@/components/contact-form";
 
 export default function Home() {
   return (
@@ -20,7 +20,7 @@ export default function Home() {
           <span>KinLedger</span>
         </Link>
         <div className="landing-nav-actions">
-          <Link href="#contact" className="button button-ghost">Contact</Link>
+          <ContactModal triggerClassName="button button-ghost" />
           <Link href="/login" className="button button-ghost">Sign in</Link>
           <Link href="/become-parent" className="button button-primary">Become a parent lender</Link>
         </div>
@@ -122,7 +122,10 @@ export default function Home() {
             </p>
             <span className="contact-email">Messages are delivered securely to the KinLedger team.</span>
           </div>
-          <ContactForm />
+          <ContactModal
+            triggerLabel="Open contact form"
+            triggerClassName="button button-primary button-large"
+          />
         </div>
       </section>
 

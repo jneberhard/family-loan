@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ContactModal } from "@/components/contact-form";
 
 export const metadata = {
   title: "Privacy",
@@ -18,7 +19,7 @@ export default function PrivacyPage() {
         </div>
         <span className="privacy-icon"><ShieldCheck size={22} /></span>
         <h1>Privacy notice</h1>
-        <p className="privacy-updated">Last updated July 24, 2026</p>
+        <p className="privacy-updated">Last updated July 25, 2026</p>
 
         <section>
           <h2>Information we handle</h2>
@@ -38,7 +39,7 @@ export default function PrivacyPage() {
         </section>
         <section>
           <h2>Retention and requests</h2>
-          <p>Account and loan information is retained while a family uses KinLedger and as reasonably necessary for security, dispute resolution, legal obligations, and backups. To request access, correction, export, or deletion, email <a href="mailto:jreberhard3@gmail.com">jreberhard3@gmail.com</a>. Identity and authority over the family workspace will be verified before fulfilling a request.</p>
+          <p>Account and loan information is retained while a family uses KinLedger and as reasonably necessary for security, dispute resolution, legal obligations, and backups. To request access, correction, export, or deletion, use the <ContactModal triggerLabel="KinLedger contact form" triggerClassName="privacy-contact-trigger" defaultSubject="Privacy or security" />. Include your phone number and account number in the message so we can verify your identity and authority over the family workspace before fulfilling the request.</p>
         </section>
         <section>
           <h2>Security</h2>

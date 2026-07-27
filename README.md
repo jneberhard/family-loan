@@ -25,7 +25,7 @@ administrators; children receive read-only access to their own account.
 - Working Family Access panel for reviewing read-only child membership
 - Working family settings for workspace name and monthly interest-posting day
 - Live loan snapshot progress derived from posted loans and payments
-- Public contact form with server-side validation and Resend-ready delivery
+- Accessible pop-out contact form with server-side validation and Resend-ready delivery
 - Interactive, database-free demo at `/demo`
 - Demo navigation back to the homepage and parent-mode child creation
 - CSV ledger export
@@ -151,7 +151,9 @@ because the family workspace is already approved.
 
 ## Contact form
 
-The public homepage contact form posts to `/api/contact`. The server validates
+The public contact modal posts to `/api/contact`. It opens from the homepage
+navigation, homepage contact callout, and Privacy page; it closes from its close
+button, backdrop, or Escape key and restores focus to its trigger. The server validates
 field lengths and email format, uses a hidden bot trap and basic rate limiting,
 and sends a plain-text message through Resend. Visitor email addresses are used
 as the reply-to address and are never exposed to the browser through Resend
@@ -280,7 +282,9 @@ only a convenience; child accounts cannot call write endpoints successfully.
 MFA is intentionally deferred. Configure MFA for the super user before handling
 sensitive production family data. Resend delivery is also deferred until the
 API key and sender settings are added. The privacy notice is available at
-`/privacy`.
+`/privacy`. Privacy requests are directed to the homepage contact form and ask
+the requester to include a phone number and account number for verification;
+the support email address is not displayed on the privacy page.
 
 ## Commands
 
