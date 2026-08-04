@@ -24,6 +24,7 @@ administrators; children receive read-only access to their own account.
 - Parent-controlled, effective-dated APR changes across a child's entire loan ledger
 - Parent editing and recoverable removal of APR-change dates and rates
 - Exact day-count interest calculation with duplicate-posting protection
+- Automatic monthly interest posting on each familyâ€™s configured posting day
 - Working Family Access panel for reviewing read-only child membership
 - Family Access editing and recoverable removal for child and co-parent accounts
 - Parent-triggered current-balance emails and per-child monthly email reminders
@@ -242,8 +243,12 @@ A co-parent cannot remove their own account or the family's last administrator.
 monthly interest-posting day from 1 through 28. The next-posting dashboard card
 also provides a direct **Change posting day** control for parent administrators.
 
-For production automation, connect a Vercel Cron job to the interest endpoint
-or a dedicated scheduled route. Keep the posting operation idempotent.
+Vercel calls `/api/cron/post-interest` once daily. The route evaluates the
+configured `REMINDER_TIME_ZONE`, selects approved families whose posting day
+matches the local calendar day, and posts exact daily APR interest to every
+active loan with a positive interest-bearing balance. A transaction-scoped
+database lock and same-date duplicate check make retries and overlapping cron
+runs safe. Automatic postings are recorded in the audit log.
 
 ## Corrections and gifts
 

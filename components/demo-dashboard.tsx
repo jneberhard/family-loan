@@ -1258,7 +1258,7 @@ export function DemoDashboard({
         <Modal title="Family settings" subtitle="Manage the workspace name and monthly interest posting schedule." onClose={() => setModal(null)}>
           <form action={saveSettings} className="modal-form">
             <label>Family workspace name<input name="familyName" defaultValue={workspaceName} required /></label>
-            <label>Monthly interest posting day<input name="postingDay" type="number" min="1" max="28" defaultValue={postingDay} required /><small className="field-help">Choose day 1 through 28 so every month has a valid posting date.</small></label>
+            <label>Monthly interest posting day<input name="postingDay" type="number" min="1" max="28" defaultValue={postingDay} required /><small className="field-help">Choose day 1 through 28. Interest posts automatically to active loans on this day each month.</small></label>
             <div className="invite-note"><ShieldCheck size={16} /> These controls are available only to family administrators.</div>
             {!demoMode && <Link href="/change-password" className="text-link">Change my password</Link>}
             <div className="modal-actions"><button type="button" className="button button-soft" onClick={() => setModal(null)}>Cancel</button><button className="button button-primary">Save settings</button></div>

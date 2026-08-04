@@ -148,12 +148,12 @@ export default async function GuidePage() {
               <strong>balance × (APR ÷ 100) ÷ 365</strong>
             </div>
             <div className="guide-two-column">
-              <div><h3>Post monthly interest</h3><p>Open the selected child’s interest action, review the period and calculated amount, then confirm. Duplicate interest for the same period is prevented.</p></div>
+              <div><h3>Post monthly interest</h3><p>Interest posts automatically on the family’s monthly posting day. Parents can open the selected child’s interest action beforehand to preview the exact daily calculation.</p></div>
               <div><h3>Change the APR</h3><p>Choose the rate action, enter the new APR and its effective date, then save. KinLedger preserves the rate history used by the ledger.</p></div>
             </div>
             <div className="guide-callout muted">
               <Settings size={21} />
-              <p>The family’s preferred monthly posting day can be changed in <strong>Family settings</strong>. The setting schedules the workflow; interest is not posted until a parent confirms it.</p>
+              <p>The family’s preferred monthly posting day can be changed in <strong>Family settings</strong>. On that day, KinLedger posts calculated interest to every active loan with a positive interest-bearing balance. Duplicate posting is prevented automatically.</p>
             </div>
           </section>
 

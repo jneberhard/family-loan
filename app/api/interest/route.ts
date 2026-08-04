@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { calculateAprInterest, type LedgerItem } from "@/lib/finance";
 import { requireAdmin } from "@/lib/session";
-import { writeAudit } from "@/lib/audit";
+import { postAccountInterest } from "@/lib/post-interest";
 
 export async function POST(request: Request) {
   try {
     const session = await requireAdmin();
     const { accountId, periodStart, periodEnd } = await request.json();
     if (
+      typeof accountId !== "string" ||
       typeof periodStart !== "string" ||
       typeof periodEnd !== "string" ||
       !/^\d{4}-\d{2}-\d{2}$/.test(periodStart) ||
@@ -18,85 +17,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Enter a valid interest period." }, { status: 400 });
     }
 
-    const account = await prisma.loanAccount.findFirst({
-      where: { id: accountId, familyId: session.familyId, deletedAt: null },
-      include: {
-        transactions: {
-          where: { deletedAt: null },
-          orderBy: [{ effectiveAt: "asc" }, { createdAt: "asc" }],
-        },
-      },
+    const result = await postAccountInterest({
+      accountId,
+      periodEnd,
+      familyId: session.familyId,
+      actorId: session.userId,
+      auditAction: "INTEREST_POSTED",
     });
-    if (!account) return NextResponse.json({ error: "Account not found." }, { status: 404 });
-
-    const duplicate = account.transactions.some(
-      (entry) =>
-        entry.type === "INTEREST" &&
-        entry.effectiveAt.toISOString().slice(0, 10) === periodEnd,
-    );
-    if (duplicate) {
+    if (result.status === "not_found") {
+      return NextResponse.json({ error: "Account not found." }, { status: 404 });
+    }
+    if (result.status === "duplicate") {
       return NextResponse.json({ error: "Interest is already posted for this date." }, { status: 409 });
     }
-
-    const ledger: LedgerItem[] = account.transactions.map((entry) => ({
-      id: entry.id,
-      date: entry.effectiveAt.toISOString().slice(0, 10),
-      type:
-        entry.type === "LOAN"
-          ? "Loan"
-          : entry.type === "PAYMENT"
-            ? "Payment"
-            : entry.type === "INTEREST"
-              ? "Interest"
-              : entry.type === "RATE_CHANGE"
-                ? "Rate change"
-                : "Adjustment",
-      description: entry.description,
-      amount: Number(entry.amount),
-      rate: entry.rate === null ? null : Number(entry.rate),
-    }));
-    const calculation = calculateAprInterest(
-      ledger,
-      Number(account.annualRate),
-      periodStart,
-      periodEnd,
-    );
-    if (calculation.total <= 0) {
+    if (result.status === "no_interest") {
       return NextResponse.json(
         { error: "There is no positive interest-bearing balance in this period." },
         { status: 400 },
       );
     }
-
-    const entry = await prisma.$transaction(async (tx) => {
-      const created = await tx.ledgerEntry.create({
-        data: {
-        accountId,
-        type: "INTEREST",
-        effectiveAt: new Date(`${periodEnd}T12:00:00Z`),
-        description: `APR interest · ${periodStart} to ${periodEnd} · ${calculation.segments.length} balance period${calculation.segments.length === 1 ? "" : "s"}`,
-        amount: calculation.total,
-        rate: account.annualRate,
-        },
-      });
-      await writeAudit(tx, {
-        action: "INTEREST_POSTED",
-        actorId: session.userId,
-        familyId: session.familyId,
-        accountId,
-        entityType: "LedgerEntry",
-        entityId: created.id,
-        after: { ...created, calculation },
-      });
-      return created;
-    });
+    if (result.status !== "posted") {
+      return NextResponse.json({ error: "Unable to post interest." }, { status: 500 });
+    }
 
     return NextResponse.json(
       {
-        ...entry,
-        amount: Number(entry.amount),
-        rate: entry.rate === null ? null : Number(entry.rate),
-        calculation,
+        ...result.entry,
+        amount: Number(result.entry.amount),
+        rate: result.entry.rate === null ? null : Number(result.entry.rate),
+        calculation: result.calculation,
+        periodStart: result.periodStart,
       },
       { status: 201 },
     );
