@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowLeft,
@@ -76,6 +76,12 @@ function daysUntil(isoDate: string) {
   return Math.max(0, Math.round((target.getTime() - localToday.getTime()) / 86_400_000));
 }
 
+function greetingForHour(hour: number) {
+  if (hour >= 18) return "Good evening";
+  if (hour >= 12) return "Good afternoon";
+  return "Good morning";
+}
+
 type Role = "parent" | "child";
 type Modal = "entry" | "edit" | "editRate" | "child" | "editChild" | "coparent" | "editCoparent" | "interest" | "rate" | "balanceEmail" | "access" | "settings" | null;
 type FamilyAdmin = {
@@ -119,6 +125,14 @@ export function DemoDashboard({
   viewerName?: string;
   initialAdmins?: FamilyAdmin[];
 }) {
+  const [timeGreeting, setTimeGreeting] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateGreeting = () => setTimeGreeting(greetingForHour(new Date().getHours()));
+    updateGreeting();
+    const timer = window.setInterval(updateGreeting, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [children, setChildren] = useState(initialChildren);
   const [admins, setAdmins] = useState(initialAdmins);
   const [selectedId, setSelectedId] = useState(initialChildren[0]?.id ?? "");
@@ -820,7 +834,11 @@ export function DemoDashboard({
           <button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu /></button>
           <div>
             <span className="breadcrumb">{workspaceName} <b>/</b> {selected.name.split(" ")[0]}&apos;s loan</span>
-            <h1>{role === "parent" ? `Good morning, ${viewerName.split(" ")[0]}` : `Hello, ${selected.name.split(" ")[0]}`}</h1>
+            <h1>
+              {role === "parent"
+                ? `${timeGreeting ?? "Hello"}, ${viewerName.split(" ")[0]}`
+                : `Hello, ${selected.name.split(" ")[0]}`}
+            </h1>
           </div>
           <div className="header-actions">
             {demoMode && (
