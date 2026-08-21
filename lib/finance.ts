@@ -1,3 +1,4 @@
+// A normalized ledger entry used by both persisted accounts and demo data.
 export type LedgerItem = {
   id: string;
   date: string;
@@ -18,6 +19,7 @@ export type AprInterestSegment = {
 
 export function calculateRunningLedger(items: LedgerItem[]) {
   let balance = 0;
+  // Work on a copy so sorting never mutates React state or API response data.
   return [...items]
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((item) => {
@@ -71,6 +73,7 @@ export function calculateAprInterest(
   let cursor = periodStart;
   const segments: AprInterestSegment[] = [];
 
+  // Close one constant-balance/rate interval and retain its calculation detail.
   function addSegment(endDate: string) {
     const days = daysBetween(cursor, endDate);
     const interestBearingBalance = Math.max(0, balance);
@@ -88,6 +91,7 @@ export function calculateAprInterest(
     cursor = endDate;
   }
 
+  // Split the period whenever a transaction or APR change becomes effective.
   for (const item of ordered) {
     if (item.date <= periodStart) {
       balance += item.amount;

@@ -82,6 +82,14 @@ function greetingForHour(hour: number) {
   return "Good morning";
 }
 
+// Only balance-changing loans and payments receive a ledger color. Interest,
+// adjustments, and rate changes retain the neutral background to avoid ambiguity.
+function ledgerEntryClass(type: LedgerItem["type"]) {
+  if (type === "Payment") return "ledger-entry-payment";
+  if (type === "Loan") return "ledger-entry-loan";
+  return "";
+}
+
 type Role = "parent" | "child";
 type Modal = "entry" | "edit" | "editRate" | "child" | "editChild" | "coparent" | "editCoparent" | "interest" | "rate" | "balanceEmail" | "access" | "settings" | null;
 type FamilyAdmin = {
@@ -125,6 +133,7 @@ export function DemoDashboard({
   viewerName?: string;
   initialAdmins?: FamilyAdmin[];
 }) {
+  // Resolve the greeting on the client so it follows the viewer's local clock.
   const [timeGreeting, setTimeGreeting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -133,6 +142,7 @@ export function DemoDashboard({
     const timer = window.setInterval(updateGreeting, 60_000);
     return () => window.clearInterval(timer);
   }, []);
+  // Dashboard state is shared by the demo and authenticated application views.
   const [children, setChildren] = useState(initialChildren);
   const [admins, setAdmins] = useState(initialAdmins);
   const [selectedId, setSelectedId] = useState(initialChildren[0]?.id ?? "");
@@ -148,13 +158,17 @@ export function DemoDashboard({
   const [sendingBalanceEmail, setSendingBalanceEmail] = useState(false);
   const [ledgerView, setLedgerView] = useState<"auto" | "cards" | "table">("auto");
 
+  // Always provide a safe selected account while an empty workspace is being set up.
   const selected = children.find((child) => child.id === selectedId) ?? children[0] ?? emptyChild;
+
+  // Recalculate every running balance whenever an account's entries change.
   const ledgers = useMemo(
     () => new Map(children.map((child) => [child.id, calculateRunningLedger(child.entries)])),
     [children],
   );
   const selectedLedger = ledgers.get(selected.id) ?? [];
   const selectedBalance = selectedLedger.at(-1)?.balance ?? 0;
+  // These totals drive the balance cards, repayment ring, and portfolio summary.
   const selectedPrincipal = selected.entries
     .filter((entry) => entry.type === "Loan")
     .reduce((sum, entry) => sum + entry.amount, 0);
@@ -176,6 +190,7 @@ export function DemoDashboard({
       sum + child.entries.filter((entry) => entry.type === "Payment").reduce((n, entry) => n + Math.abs(entry.amount), 0),
     0,
   );
+  // Interest begins after the latest posting and ends on the next configured day.
   const interestPeriod = useMemo(() => {
     const periodEnd = nextPostingDate(postingDay);
     const eligible = selected.entries
@@ -203,6 +218,7 @@ export function DemoDashboard({
   async function addEntry(formData: FormData) {
     const type = String(formData.get("type")) as LedgerItem["type"];
     const rawAmount = Number(formData.get("amount"));
+    // Payments always reduce the balance; loans always increase it.
     const amount = type === "Payment" ? -Math.abs(rawAmount) : type === "Adjustment" ? rawAmount : Math.abs(rawAmount);
     const entry: LedgerItem = {
       id: `demo-${Date.now()}`,
@@ -212,6 +228,7 @@ export function DemoDashboard({
       amount,
       rate: type === "Payment" ? null : Number(formData.get("rate") || selected.rate),
     };
+    // Persist authenticated changes before reflecting them in local UI state.
     if (!demoMode) {
       const response = await fetch("/api/transactions", {
         method: "POST",
@@ -245,6 +262,7 @@ export function DemoDashboard({
     if (!editingEntry) return;
     const type = String(formData.get("type")) as LedgerItem["type"];
     const rawAmount = Number(formData.get("amount"));
+    // Reapply the sign convention in case the entry type was changed while editing.
     const amount = type === "Payment" ? -Math.abs(rawAmount) : type === "Adjustment" ? rawAmount : Math.abs(rawAmount);
     const updated: LedgerItem = {
       ...editingEntry,
@@ -272,6 +290,7 @@ export function DemoDashboard({
         return;
       }
     }
+    // Replace only the edited line; running balances are derived again automatically.
     setChildren((current) =>
       current.map((child) =>
         child.id === selected.id
@@ -296,6 +315,7 @@ export function DemoDashboard({
       }
       if (result.currentApr !== undefined) serverCurrentApr = Number(result.currentApr);
     }
+    // Removing a rate change also restores the most recent remaining APR.
     setChildren((current) =>
       current.map((child) =>
         child.id === selected.id
@@ -622,6 +642,7 @@ export function DemoDashboard({
   }
 
   async function postInterest() {
+    // Production posts the authoritative result; demo mode mirrors it locally.
     let amount = interestPeriod.calculation.total;
     let description = `APR interest · ${interestPeriod.periodStart} to ${interestPeriod.periodEnd} · ${interestPeriod.calculation.segments.length} balance period${interestPeriod.calculation.segments.length === 1 ? "" : "s"}`;
     let id = `interest-${Date.now()}`;
@@ -662,6 +683,7 @@ export function DemoDashboard({
   }
 
   async function sendCurrentBalance() {
+    // Keep the button disabled while the email provider processes the request.
     setSendingBalanceEmail(true);
     if (demoMode) {
       await new Promise((resolve) => window.setTimeout(resolve, 450));
@@ -711,6 +733,7 @@ export function DemoDashboard({
   }
 
   function exportLedger() {
+    // Generate the CSV in the browser so exports require no server-side storage.
     const header = "Date,Type,Description,Rate,Amount,Balance\n";
     const rows = selectedLedger
       .map((entry) =>
@@ -972,12 +995,13 @@ export function DemoDashboard({
                   <button className="icon-button" aria-label="More ledger options"><MoreHorizontal /></button>
                 </div>
               </div>
+              {/* Desktop rows use the same payment/loan colors as mobile cards. */}
               <div className="ledger-table-wrap">
                 <table className="ledger-table">
                   <thead><tr><th>Date</th><th>Details</th><th>Rate</th><th>Amount</th><th>Balance</th>{role === "parent" && <th><span className="sr-only">Actions</span></th>}</tr></thead>
                   <tbody>
                     {[...selectedLedger].reverse().map((entry) => (
-                      <tr key={entry.id}>
+                      <tr className={ledgerEntryClass(entry.type)} key={entry.id}>
                         <td>{new Date(`${entry.date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
                         <td>
                           <div className={`entry-icon ${entry.type.toLowerCase()}`}>
@@ -1002,9 +1026,10 @@ export function DemoDashboard({
                   </tbody>
                 </table>
               </div>
+              {/* Mobile cards replace the wide table while preserving its information. */}
               <div className="ledger-cards">
                 {[...selectedLedger].reverse().map((entry) => (
-                  <article className="transaction-card" key={entry.id}>
+                  <article className={`transaction-card ${ledgerEntryClass(entry.type)}`} key={entry.id}>
                     <div className="transaction-card-heading">
                       <div className={`entry-icon ${entry.type.toLowerCase()}`}>
                         {entry.type === "Payment" ? <ArrowDownLeft /> : entry.type === "Interest" ? <CircleDollarSign /> : <ArrowUpRight />}
