@@ -69,6 +69,15 @@ function displayDate(isoDate: string) {
   });
 }
 
+// Format a device-local date for HTML date inputs without converting it to UTC.
+function localIsoDate(date = new Date()) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
 function daysUntil(isoDate: string) {
   const target = new Date(`${isoDate}T00:00:00`);
   const today = new Date();
@@ -157,6 +166,7 @@ export function DemoDashboard({
   const [workspaceName, setWorkspaceName] = useState(familyName);
   const [sendingBalanceEmail, setSendingBalanceEmail] = useState(false);
   const [ledgerView, setLedgerView] = useState<"auto" | "cards" | "table">("auto");
+  const [entryDate, setEntryDate] = useState("");
 
   // Always provide a safe selected account while an empty workspace is being set up.
   const selected = children.find((child) => child.id === selectedId) ?? children[0] ?? emptyChild;
@@ -213,6 +223,12 @@ export function DemoDashboard({
     setRole(nextRole);
     if (nextRole === "child") setSelectedId("olivia");
     setMobileNav(false);
+  }
+
+  function openAddEntry() {
+    // Calculate this on each click so a long-running dashboard never reuses yesterday.
+    setEntryDate(localIsoDate());
+    setModal("entry");
   }
 
   async function addEntry(formData: FormData) {
@@ -873,7 +889,7 @@ export function DemoDashboard({
               <button className="button button-gold" onClick={() => setModal("child")}><UserPlus size={17} /> Add child</button>
             )}
             {role === "parent" && children.length > 0 && (
-              <button className="button button-primary" onClick={() => setModal("entry")}><Plus size={17} /> Add entry</button>
+              <button className="button button-primary" onClick={openAddEntry}><Plus size={17} /> Add entry</button>
             )}
           </div>
         </header>
@@ -924,7 +940,7 @@ export function DemoDashboard({
             </div>
             <div className="account-actions">
               {role === "parent" && (
-                <button className="button button-primary mobile-account-add" onClick={() => setModal("entry")}>
+                <button className="button button-primary mobile-account-add" onClick={openAddEntry}>
                   <Plus size={17} /> Add entry
                 </button>
               )}
@@ -1117,7 +1133,7 @@ export function DemoDashboard({
             <>
               <Link href="/"><House size={20} /><span>Home</span></Link>
               <button type="button" onClick={() => setMobileNav(true)}><Users size={20} /><span>Children</span></button>
-              <button type="button" className="primary" onClick={() => setModal("entry")} disabled={!children.length}><Plus size={22} /><span>Add entry</span></button>
+              <button type="button" className="primary" onClick={openAddEntry} disabled={!children.length}><Plus size={22} /><span>Add entry</span></button>
               <button type="button" onClick={() => document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" })}><ReceiptText size={20} /><span>Activity</span></button>
               <button type="button" onClick={() => setMobileNav(true)}><UserPlus size={20} /><span>Account</span></button>
             </>
@@ -1137,7 +1153,7 @@ export function DemoDashboard({
           <form action={addEntry} className="modal-form">
             <div className="field-grid">
               <label>Entry type<select name="type" defaultValue="Payment"><option>Payment</option><option>Loan</option><option>Adjustment</option></select></label>
-              <label>Effective date<input name="date" type="date" defaultValue="2026-07-24" required /></label>
+              <label>Effective date<input name="date" type="date" defaultValue={entryDate} required /></label>
             </div>
             <label>Amount<input name="amount" type="number" step="0.01" placeholder="500.00 or -500.00" required /><small className="field-help">For an adjustment, use a negative amount to reduce the balance—for example, −500 for a $500 gift.</small></label>
             <label>Description<input name="description" placeholder="Monthly payment" required /></label>
