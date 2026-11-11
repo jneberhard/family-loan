@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ContactModal } from "@/components/contact-form";
+import { VideoNavLink } from "@/components/video-nav-link";
 import { getSession } from "@/lib/session";
 
 export default async function Home() {
@@ -30,6 +31,7 @@ export default async function Home() {
         <div className="landing-nav-actions">
           <ContactModal triggerClassName="button button-ghost" />
           <Link href="/demo" className="button button-gold">Demo</Link>
+          <VideoNavLink />
           {session ? (
             <Link href={accountHref} className="button button-primary">Open dashboard</Link>
           ) : (
@@ -105,6 +107,7 @@ export default async function Home() {
           </div>
           <div className="video-frame">
             <video
+              id="explainer-video"
               controls
               playsInline
               preload="metadata"
