@@ -96,6 +96,34 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="video-section" aria-labelledby="explainer-heading">
+        <div className="container">
+          <div className="video-intro">
+            <span className="section-kicker">See how it works</span>
+            <h2 id="explainer-heading">A clearer way to track family loans.</h2>
+            <p>Take a one-minute tour of loan records, payment history, interest, and shared family access.</p>
+          </div>
+          <div className="video-frame">
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              poster="/family-loan-ledger-video-poster.png"
+              aria-label="Family Loan Ledger explainer video with narration and music"
+            >
+              <source src="/family-loan-ledger-explainer.mp4" type="video/mp4" />
+              <track
+                kind="captions"
+                src="/family-loan-ledger-captions.vtt"
+                srcLang="en"
+                label="English captions"
+              />
+              Your browser does not support embedded videos. Please use a modern browser to watch the Family Loan Ledger explainer.
+            </video>
+          </div>
+        </div>
+      </section>
+
       <section className="promise-band">
         <div className="container promise-grid">
           <div>
