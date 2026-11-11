@@ -15,6 +15,18 @@ export async function POST(request: Request) {
     if (!["LOAN", "PAYMENT", "ADJUSTMENT"].includes(body.type)) {
       return NextResponse.json({ error: "Invalid transaction type." }, { status: 400 });
     }
+    const description = typeof body.description === "string" ? body.description.trim() : "";
+    const effectiveAt = typeof body.effectiveAt === "string" ? new Date(`${body.effectiveAt}T12:00:00Z`) : null;
+    if (!description || description.length > 200) {
+      return NextResponse.json({ error: "Enter a description of 200 characters or fewer." }, { status: 400 });
+    }
+    if (
+      !effectiveAt ||
+      Number.isNaN(effectiveAt.getTime()) ||
+      effectiveAt.toISOString().slice(0, 10) !== body.effectiveAt
+    ) {
+      return NextResponse.json({ error: "Enter a valid effective date." }, { status: 400 });
+    }
     const amount = Number(body.amount);
     if (!Number.isFinite(amount) || amount === 0) {
       return NextResponse.json({ error: "Amount must be a non-zero number." }, { status: 400 });
@@ -30,8 +42,8 @@ export async function POST(request: Request) {
         data: {
           accountId: account.id,
           type: body.type,
-          effectiveAt: new Date(`${body.effectiveAt}T12:00:00Z`),
-          description: body.description,
+          effectiveAt,
+          description,
           amount: signedAmount,
           rate: body.type === "PAYMENT" ? null : (body.rate ?? account.annualRate),
         },

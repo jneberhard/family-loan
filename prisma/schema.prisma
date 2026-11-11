@@ -28,6 +28,17 @@ enum EntryType {
   RATE_CHANGE
 }
 
+enum DeletionRequestStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum DeletionRequestSource {
+  IN_APP
+  WEB
+}
+
 model Family {
   id                 String         @id @default(cuid())
   name               String
@@ -55,8 +66,12 @@ model User {
   lockedUntil         DateTime?
   mustChangePassword  Boolean      @default(false)
   lastLoginAt         DateTime?
+  mfaSecret           String?
+  mfaEnabledAt        DateTime?
+  mfaRecoveryCodes    String[]     @default([])
   deletedAt           DateTime?
   auditLogs           AuditLog[]   @relation("AuditActor")
+  mobileSessions      MobileSession[]
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -117,4 +132,44 @@ model AuditLog {
   @@index([familyId, createdAt])
   @@index([accountId, createdAt])
   @@index([actorId, createdAt])
+}
+
+model AccountDeletionRequest {
+  id          String                @id @default(cuid())
+  requesterId String?
+  familyId    String?
+  accountId   String?
+  name        String
+  email       String
+  role        UserRole
+  source      DeletionRequestSource
+  status      DeletionRequestStatus @default(PENDING)
+  createdAt   DateTime              @default(now())
+  resolvedAt  DateTime?
+
+  @@index([status, createdAt])
+  @@index([requesterId, createdAt])
+  @@index([familyId, createdAt])
+}
+
+model RateLimitBucket {
+  key             String   @id
+  windowStartedAt DateTime
+  count           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
+model MobileSession {
+  id         String    @id
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
 }

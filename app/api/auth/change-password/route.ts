@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
-import { createSession, requireSession } from "@/lib/session";
+import { createMobileSessionToken, createSession, requireSession } from "@/lib/session";
 
 export async function POST(request: Request) {
   try {
@@ -46,6 +46,10 @@ export async function POST(request: Request) {
         },
         include: { childAccount: true },
       });
+      await tx.mobileSession.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
       await writeAudit(tx, {
         action: "PASSWORD_CHANGED",
         actorId: user.id,
@@ -57,7 +61,7 @@ export async function POST(request: Request) {
       return changed;
     });
 
-    await createSession({
+    const updatedSession = {
       userId: updated.id,
       familyId: updated.familyId ?? undefined,
       role: updated.role,
@@ -65,9 +69,14 @@ export async function POST(request: Request) {
       name: updated.name,
       sessionVersion: updated.sessionVersion,
       mustChangePassword: false,
-    });
+    } as const;
+    await createSession(updatedSession);
 
-    return NextResponse.json({ ok: true, role: updated.role });
+    const response: Record<string, unknown> = { ok: true, role: updated.role };
+    if (request.headers.get("x-kinledger-client") === "native") {
+      response.token = await createMobileSessionToken(updatedSession);
+    }
+    return NextResponse.json(response, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const status = message === "UNAUTHORIZED" ? 401 : 500;

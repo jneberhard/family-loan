@@ -778,8 +778,8 @@ export function DemoDashboard({
       <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
         <div className="sidebar-top">
           <Link href="/" className="brand app-brand">
-            <Image src="/kinledger-logo.png" alt="" width={45} height={45} priority />
-            <span>KinLedger</span>
+            <Image src="/family-loan-ledger-logo.png" alt="" width={45} height={45} priority />
+            <span>Family Loan Ledger</span>
           </Link>
           <button className="icon-button mobile-close" onClick={() => setMobileNav(false)} aria-label="Close navigation"><X /></button>
         </div>
@@ -803,7 +803,7 @@ export function DemoDashboard({
           {role === "parent" && <Link href="/guide" className="desktop-help-guide" onClick={() => setMobileNav(false)}><BookOpen size={19} /> User guide</Link>}
           {role === "parent" && (
             <ContactModal
-              triggerLabel={<><MessageCircle size={19} /> Contact KinLedger</>}
+              triggerLabel={<><MessageCircle size={19} /> Contact Family Loan Ledger</>}
               triggerClassName="side-nav-contact"
               defaultSubject="Parent-lender account"
               onOpen={() => setMobileNav(false)}
@@ -1118,7 +1118,7 @@ export function DemoDashboard({
 
         {!demoMode && (
           <footer className="app-footer">
-            <span>© 2026 KinLedger <b>·</b> {workspaceName}</span>
+            <span>© 2026 Family Loan Ledger <b>·</b> {workspaceName}</span>
             <nav aria-label="Account footer">
               <span>Signed in as {viewerName}</span>
               <Link href="/guide">User guide</Link>

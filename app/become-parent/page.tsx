@@ -5,7 +5,7 @@ import { ParentRegistrationForm } from "@/components/parent-registration-form";
 
 export const metadata = {
   title: "Become a parent lender",
-  description: "Apply for a private KinLedger parent-lender workspace.",
+  description: "Apply for a private Family Loan Ledger parent-lender workspace.",
 };
 
 export default function BecomeParentPage() {
@@ -14,7 +14,7 @@ export default function BecomeParentPage() {
       <section className="login-story">
         <Link href="/" className="back-link"><ArrowLeft size={17} /> Back home</Link>
         <div className="login-story-inner">
-          <Image src="/kinledger-logo.png" alt="KinLedger" width={96} height={96} priority />
+          <Image src="/family-loan-ledger-logo.png" alt="Family Loan Ledger" width={96} height={96} priority />
           <span className="section-kicker light">Become a parent lender</span>
           <h1>Create a clear, private place for every family loan.</h1>
           <ul>
@@ -27,8 +27,8 @@ export default function BecomeParentPage() {
       <section className="login-panel">
         <div className="login-card registration-card">
           <div className="brand login-brand">
-            <Image src="/kinledger-logo.png" alt="" width={42} height={42} />
-            <span>KinLedger</span>
+            <Image src="/family-loan-ledger-logo.png" alt="" width={42} height={42} />
+            <span>Family Loan Ledger</span>
           </div>
           <span className="login-icon"><ShieldCheck size={22} /></span>
           <h2>Parent-lender application</h2>

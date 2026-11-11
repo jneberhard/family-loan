@@ -25,12 +25,28 @@ type Application = {
   reviewNote: string | null;
 };
 
-export function SuperAdminDashboard({ initialApplications }: { initialApplications: Application[] }) {
+type DeletionRequest = {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "CHILD" | "SUPER_USER";
+  source: "IN_APP" | "WEB";
+  createdAt: string;
+};
+
+export function SuperAdminDashboard({
+  initialApplications,
+  initialDeletionRequests,
+}: {
+  initialApplications: Application[];
+  initialDeletionRequests: DeletionRequest[];
+}) {
   const [applications, setApplications] = useState(initialApplications);
   const [filter, setFilter] = useState<Application["status"] | "ALL">("PENDING");
   const [query, setQuery] = useState("");
   const [workingId, setWorkingId] = useState("");
   const [toast, setToast] = useState("");
+  const [deletionRequests, setDeletionRequests] = useState(initialDeletionRequests);
 
   const visible = useMemo(
     () =>
@@ -80,13 +96,36 @@ export function SuperAdminDashboard({ initialApplications }: { initialApplicatio
     window.setTimeout(() => setToast(""), 3500);
   }
 
+  async function fulfillDeletion(item: DeletionRequest) {
+    if (!window.confirm(`After verifying ${item.email}, complete deletion and anonymize their account? The family's financial ledger will be kept with the requester anonymized.`)) return;
+    setWorkingId(item.id);
+    const response = await fetch(`/api/super-admin/deletion-requests/${item.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "COMPLETED" }),
+    });
+    const result = await response.json().catch(() => ({}));
+    setWorkingId("");
+    if (!response.ok) {
+      setToast(
+        result.error === "LAST_FAMILY_ADMIN"
+          ? "Add another family administrator before completing this deletion."
+          : result.error ?? "Unable to complete the deletion request.",
+      );
+      return;
+    }
+    setDeletionRequests((current) => current.filter((request) => request.id !== item.id));
+    setToast("Account details were removed and the family ledger was retained.");
+    window.setTimeout(() => setToast(""), 3500);
+  }
+
   return (
     <main className="super-shell">
       {toast && <div className="toast"><Check size={17} /> {toast}</div>}
       <header className="super-header">
         <Link href="/" className="brand">
-          <Image src="/kinledger-logo.png" alt="" width={44} height={44} priority />
-          <span>KinLedger</span>
+          <Image src="/family-loan-ledger-logo.png" alt="" width={44} height={44} priority />
+          <span>Family Loan Ledger</span>
         </Link>
         <span className="super-badge"><ShieldCheck size={15} /> Super user console</span>
         <form action="/api/auth/logout" method="post">
@@ -159,6 +198,40 @@ export function SuperAdminDashboard({ initialApplications }: { initialApplicatio
             </div>
           )}
         </div>
+
+        <section className="deletion-requests">
+          <div className="super-heading">
+            <div>
+              <span className="section-kicker">Privacy requests</span>
+              <h2>Account deletion</h2>
+              <p>Verify external requests with the requester before completing them. Financial ledger history is retained with identifying details removed.</p>
+            </div>
+            <div className="super-summary"><span><Clock3 /> <strong>{deletionRequests.length}</strong> pending</span></div>
+          </div>
+          <div className="approval-list">
+            {deletionRequests.map((item) => (
+              <article className="approval-card" key={item.id}>
+                <div className="approval-avatar">{item.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</div>
+                <div className="approval-identity">
+                  <span className="status-pill pending">pending</span>
+                  <h2>{item.name}</h2>
+                  <p>{item.email} · {item.role.toLowerCase()} · {item.source === "IN_APP" ? "in app" : "web request"}</p>
+                </div>
+                <div className="approval-meta"><span><Clock3 size={15} /> Requested {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span></div>
+                <div className="approval-actions">
+                  <button className="button button-primary" disabled={workingId === item.id} onClick={() => fulfillDeletion(item)}>Verify and delete account</button>
+                </div>
+              </article>
+            ))}
+            {!deletionRequests.length && (
+              <div className="approval-empty">
+                <ShieldCheck size={28} />
+                <h2>No deletion requests</h2>
+                <p>New account deletion requests will appear here.</p>
+              </div>
+            )}
+          </div>
+        </section>
       </section>
     </main>
   );

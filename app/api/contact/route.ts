@@ -63,10 +63,10 @@ export async function POST(request: Request) {
 
     const resend = new Resend(apiKey);
     const { error } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? "KinLedger <onboarding@resend.dev>",
+      from: process.env.RESEND_FROM_EMAIL ?? "Family Loan Ledger <onboarding@resend.dev>",
       to: [process.env.CONTACT_TO_EMAIL ?? "jreberhard3@gmail.com"],
       replyTo: email,
-      subject: `[KinLedger contact] ${subject}`,
+      subject: `[Family Loan Ledger contact] ${subject}`,
       text: [
         `Name: ${name}`,
         `Email: ${email}`,

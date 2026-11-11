@@ -18,7 +18,7 @@ import { getSession } from "@/lib/session";
 
 export const metadata = {
   title: "User Guide",
-  description: "Learn how to set up and manage a family loan in KinLedger.",
+  description: "Learn how to set up and manage a family loan in Family Loan Ledger.",
 };
 
 const guideSections = [
@@ -46,8 +46,8 @@ export default async function GuidePage() {
     <main className="guide-page">
       <nav className="guide-nav container" aria-label="Guide navigation">
         <Link href="/" className="brand">
-          <Image src="/kinledger-logo.png" alt="" width={44} height={44} priority />
-          <span>KinLedger</span>
+          <Image src="/family-loan-ledger-logo.png" alt="" width={44} height={44} priority />
+          <span>Family Loan Ledger</span>
         </Link>
         <Link href={returnHref} className="guide-home-link">
           <ArrowLeft size={16} /> {session ? "Back to dashboard" : "Back home"}
@@ -71,11 +71,11 @@ export default async function GuidePage() {
         <article className="guide-content">
           <header className="guide-hero">
             <span className="guide-icon"><BookOpen size={24} /></span>
-            <p className="section-kicker">KinLedger user guide</p>
+            <p className="section-kicker">Family Loan Ledger user guide</p>
             <h1>Clear records for every family loan.</h1>
             <p>
               This guide walks parent lenders, co-parents, and children through the
-              everyday parts of KinLedger—from creating an account to reviewing a balance.
+              everyday parts of Family Loan Ledger—from creating an account to reviewing a balance.
             </p>
           </header>
 
@@ -89,7 +89,7 @@ export default async function GuidePage() {
             </div>
             <div className="guide-steps">
               <div><b>1</b><p><strong>Create a parent-lender account.</strong> Select <em>Become a parent lender</em>, enter your family workspace and sign-in details, then submit the application.</p></div>
-              <div><b>2</b><p><strong>Wait for approval.</strong> KinLedger reviews new parent-lender applications before the workspace can be used.</p></div>
+              <div><b>2</b><p><strong>Wait for approval.</strong> Family Loan Ledger reviews new parent-lender applications before the workspace can be used.</p></div>
               <div><b>3</b><p><strong>Sign in and add a child.</strong> From the dashboard, choose <em>Add child</em>, then enter the child’s name, email, loan purpose, starting APR, and a temporary password.</p></div>
               <div><b>4</b><p><strong>Share credentials privately.</strong> Give the temporary password directly to the child. They will be asked to replace it when they first sign in.</p></div>
             </div>
@@ -131,7 +131,7 @@ export default async function GuidePage() {
               <div><span className="entry-dot adjustment" /><p><strong>Adjustment</strong> corrects the ledger. A positive adjustment raises the balance; a negative one lowers it, such as for a family gift.</p></div>
               <div><span className="entry-dot interest" /><p><strong>Interest</strong> is created through the interest-calculation flow and increases the balance.</p></div>
             </div>
-            <p className="guide-small">Parents and co-parents can edit or remove an entry. KinLedger recalculates the running balance automatically and keeps an audit record of the change.</p>
+            <p className="guide-small">Parents and co-parents can edit or remove an entry. Family Loan Ledger recalculates the running balance automatically and keeps an audit record of the change.</p>
           </section>
 
           <section id="interest" className="guide-section">
@@ -142,18 +142,18 @@ export default async function GuidePage() {
                 <h2>Interest and APR</h2>
               </div>
             </div>
-            <p>Each child account has an annual percentage rate. KinLedger calculates interest using the outstanding balance for each day, so loans, payments, gifts, and rate changes are reflected from their effective dates.</p>
+            <p>Each child account has an annual percentage rate. Family Loan Ledger calculates interest using the outstanding balance for each day, so loans, payments, gifts, and rate changes are reflected from their effective dates.</p>
             <div className="guide-formula">
               <span>Daily interest</span>
               <strong>balance × (APR ÷ 100) ÷ 365</strong>
             </div>
             <div className="guide-two-column">
               <div><h3>Post monthly interest</h3><p>Interest posts automatically on the family’s monthly posting day. Parents can open the selected child’s interest action beforehand to preview the exact daily calculation.</p></div>
-              <div><h3>Change the APR</h3><p>Choose the rate action, enter the new APR and its effective date, then save. KinLedger preserves the rate history used by the ledger.</p></div>
+              <div><h3>Change the APR</h3><p>Choose the rate action, enter the new APR and its effective date, then save. Family Loan Ledger preserves the rate history used by the ledger.</p></div>
             </div>
             <div className="guide-callout muted">
               <Settings size={21} />
-              <p>The family’s preferred monthly posting day can be changed in <strong>Family settings</strong>. On that day, KinLedger posts calculated interest to every active loan with a positive interest-bearing balance. Duplicate posting is prevented automatically.</p>
+              <p>The family’s preferred monthly posting day can be changed in <strong>Family settings</strong>. On that day, Family Loan Ledger posts calculated interest to every active loan with a positive interest-bearing balance. Duplicate posting is prevented automatically.</p>
             </div>
           </section>
 
@@ -221,13 +221,13 @@ export default async function GuidePage() {
               <li>Use a unique password and share temporary credentials through a private channel.</li>
               <li>Download the ledger periodically if your family wants an offline copy.</li>
             </ul>
-            <p className="guide-small">KinLedger helps families maintain a shared record; it does not replace legal, tax, or financial advice. Consult a qualified financial adviser, tax professional, or legal representative, and review the <Link href="/legal">Legal &amp; Loan Disclaimer</Link>, before relying on a family loan.</p>
+            <p className="guide-small">Family Loan Ledger helps families maintain a shared record; it does not replace legal, tax, or financial advice. Consult a qualified financial adviser, tax professional, or legal representative, and review the <Link href="/legal">Legal &amp; Loan Disclaimer</Link>, before relying on a family loan.</p>
           </section>
 
           <footer className="guide-footer">
             <div>
               <strong>Ready to explore?</strong>
-              <p>Try the sample family workspace or return to KinLedger.</p>
+              <p>Try the sample family workspace or return to Family Loan Ledger.</p>
             </div>
             <div>
               <Link href="/demo" className="button button-primary">Open the demo</Link>

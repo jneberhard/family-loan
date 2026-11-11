@@ -41,7 +41,7 @@ export async function sendBalanceEmail({
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send(
     {
-      from: process.env.RESEND_FROM_EMAIL ?? "KinLedger <onboarding@resend.dev>",
+      from: process.env.RESEND_FROM_EMAIL ?? "Family Loan Ledger <onboarding@resend.dev>",
       to: [childEmail],
       subject: `${familyName} loan balance: ${formattedBalance}`,
       text: [
@@ -53,7 +53,7 @@ export async function sendBalanceEmail({
         "",
         "This balance is provided for your records. Please contact your family administrator with questions.",
         "",
-        "KinLedger",
+        "Family Loan Ledger",
       ].filter(Boolean).join("\n"),
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#2D3748">

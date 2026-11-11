@@ -30,7 +30,7 @@ export function LoginForm() {
       result.mustChangePassword
         ? "/change-password"
         : result.role === "SUPER_USER"
-          ? "/super-admin"
+          ? "/mfa"
           : "/dashboard",
     );
     router.refresh();

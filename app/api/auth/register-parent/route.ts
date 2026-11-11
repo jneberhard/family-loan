@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +28,24 @@ export async function POST(request: Request) {
         { error: "You must acknowledge the Legal & Loan Disclaimer." },
         { status: 400 },
       );
+    }
+    const ipLimit = await checkRateLimit({
+      scope: "parent-registration-ip",
+      identity: getClientIp(request),
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+    });
+    const emailLimit = await checkRateLimit({
+      scope: "parent-registration-email",
+      identity: email,
+      limit: 3,
+      windowMs: 24 * 60 * 60 * 1000,
+    });
+    if (!ipLimit.allowed || !emailLimit.allowed) {
+      return rateLimitResponse(Math.max(
+        !ipLimit.allowed ? ipLimit.retryAfterSeconds : 0,
+        !emailLimit.allowed ? emailLimit.retryAfterSeconds : 0,
+      ));
     }
     if (!Number.isInteger(interestPostingDay) || interestPostingDay < 1 || interestPostingDay > 28) {
       return NextResponse.json({ error: "Interest posting day must be between 1 and 28." }, { status: 400 });

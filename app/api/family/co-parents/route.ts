@@ -3,11 +3,17 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { writeAudit } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
     const session = await requireAdmin();
+    const ipLimit = await checkRateLimit({ scope: "family-account-create-ip", identity: getClientIp(request), limit: 30, windowMs: 60 * 60 * 1000 });
+    const adminLimit = await checkRateLimit({ scope: "family-account-create-admin", identity: session.userId, limit: 20, windowMs: 60 * 60 * 1000 });
+    if (!ipLimit.allowed || !adminLimit.allowed) {
+      return rateLimitResponse(Math.max(!ipLimit.allowed ? ipLimit.retryAfterSeconds : 0, !adminLimit.allowed ? adminLimit.retryAfterSeconds : 0));
+    }
     const body = await request.json();
     const name = String(body.name ?? "").trim();
     const email = String(body.email ?? "").trim().toLowerCase();

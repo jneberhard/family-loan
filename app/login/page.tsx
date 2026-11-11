@@ -9,7 +9,7 @@ export default function LoginPage() {
       <section className="login-story">
         <Link href="/" className="back-link"><ArrowLeft size={17} /> Back home</Link>
         <div className="login-story-inner">
-          <Image src="/kinledger-logo.png" alt="KinLedger" width={96} height={96} priority />
+          <Image src="/family-loan-ledger-logo.png" alt="Family Loan Ledger" width={96} height={96} priority />
           <span className="section-kicker light">A family record you can trust</span>
           <h1>Money conversations feel better when the numbers are clear.</h1>
           <ul>
@@ -22,8 +22,8 @@ export default function LoginPage() {
       <section className="login-panel">
         <div className="login-card">
           <div className="brand login-brand">
-            <Image src="/kinledger-logo.png" alt="" width={42} height={42} />
-            <span>KinLedger</span>
+            <Image src="/family-loan-ledger-logo.png" alt="" width={42} height={42} />
+            <span>Family Loan Ledger</span>
           </div>
           <span className="login-icon"><LockKeyhole size={22} /></span>
           <h2>Welcome back</h2>

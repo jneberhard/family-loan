@@ -16,7 +16,7 @@ export default async function ChangePasswordPage() {
     <main className="login-page">
       <section className="login-story">
         <div className="login-story-inner">
-          <Image src="/kinledger-logo.png" alt="KinLedger" width={96} height={96} priority />
+          <Image src="/family-loan-ledger-logo.png" alt="Family Loan Ledger" width={96} height={96} priority />
           <span className="section-kicker light">Protect your family records</span>
           <h1>A strong, private password is the first line of defense.</h1>
           <p>Changing it also signs out any other browser sessions for this account.</p>
@@ -25,8 +25,8 @@ export default async function ChangePasswordPage() {
       <section className="login-panel">
         <div className="login-card">
           <div className="brand login-brand">
-            <Image src="/kinledger-logo.png" alt="" width={42} height={42} />
-            <span>KinLedger</span>
+            <Image src="/family-loan-ledger-logo.png" alt="" width={42} height={42} />
+            <span>Family Loan Ledger</span>
           </div>
           <span className="login-icon"><KeyRound size={22} /></span>
           <h2>{session.mustChangePassword ? "Create your private password" : "Change your password"}</h2>

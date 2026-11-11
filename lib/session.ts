@@ -1,5 +1,6 @@
-import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
+import { SignJWT, jwtVerify, type JWTPayload } from "jose";
+import { randomUUID } from "node:crypto";
+import { cookies, headers } from "next/headers";
 import type { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -11,6 +12,7 @@ export type Session = {
   name: string;
   sessionVersion: number;
   mustChangePassword: boolean;
+  mfaVerified?: boolean;
 };
 
 const cookieName =
@@ -30,13 +32,38 @@ function key() {
   return new TextEncoder().encode(value ?? "development-only-session-secret-change-me");
 }
 
-export async function createSession(session: Session) {
-  const token = await new SignJWT(session)
+export async function createSessionToken(session: Session) {
+  return new SignJWT(session)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("24h")
     .sign(key());
+}
 
+export async function createMobileSessionToken(session: Session) {
+  const id = randomUUID();
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const retentionCutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  await prisma.mobileSession.deleteMany({
+    where: {
+      OR: [
+        { expiresAt: { lt: retentionCutoff } },
+        { revokedAt: { lt: retentionCutoff } },
+      ],
+    },
+  });
+  await prisma.mobileSession.create({ data: { id, userId: session.userId, expiresAt } });
+  return new SignJWT(session)
+    .setProtectedHeader({ alg: "HS256" })
+    .setJti(id)
+    .setIssuedAt()
+    .setExpirationTime("24h")
+    .sign(key());
+}
+
+export async function createSession(session: Session) {
+  const token = await createSessionToken(session);
   const store = await cookies();
   store.set(cookieName, token, {
     httpOnly: true,
@@ -47,7 +74,9 @@ export async function createSession(session: Session) {
 }
 
 export async function getSession(): Promise<Session | null> {
-  const token = (await cookies()).get(cookieName)?.value;
+  const authorization = (await headers()).get("authorization");
+  const bearerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const token = bearerToken ?? (await cookies()).get(cookieName)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, key());
@@ -68,6 +97,19 @@ export async function getSession(): Promise<Session | null> {
     });
     if (!user || user.deletedAt || user.sessionVersion !== payload.sessionVersion || user.role !== payload.role) return null;
     if (user.role !== "SUPER_USER" && user.family?.approvalStatus !== "APPROVED") return null;
+    if (bearerToken) {
+      if (typeof payload.jti !== "string") return null;
+      const mobileSession = await prisma.mobileSession.findFirst({
+        where: {
+          id: payload.jti,
+          userId: user.id,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: { id: true },
+      });
+      if (!mobileSession) return null;
+    }
     return {
       userId: user.id,
       name: user.name,
@@ -76,10 +118,28 @@ export async function getSession(): Promise<Session | null> {
       accountId: user.childAccount?.id,
       sessionVersion: user.sessionVersion,
       mustChangePassword: user.mustChangePassword,
+      mfaVerified: payload.mfaVerified === true,
     };
   } catch {
     return null;
   }
+}
+
+export async function revokeBearerSession(request: Request) {
+  const bearerToken = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+  if (!bearerToken) return false;
+  let payload: JWTPayload;
+  try {
+    ({ payload } = await jwtVerify(bearerToken, key()));
+  } catch {
+    return false;
+  }
+  if (typeof payload.jti !== "string" || typeof payload.userId !== "string") return false;
+  const result = await prisma.mobileSession.updateMany({
+    where: { id: payload.jti, userId: payload.userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  return result.count === 1;
 }
 
 export async function clearSession() {
@@ -116,6 +176,6 @@ export async function requireAdmin() {
 
 export async function requireSuperUser() {
   const session = await requireSession();
-  if (session.mustChangePassword || session.role !== "SUPER_USER") throw new Error("FORBIDDEN");
+  if (session.mustChangePassword || session.role !== "SUPER_USER" || !session.mfaVerified) throw new Error("FORBIDDEN");
   return session as Session & { role: "SUPER_USER" };
 }

@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const name = process.env.SUPER_USER_NAME?.trim() || "KinLedger Administrator";
+  const name = process.env.SUPER_USER_NAME?.trim() || "Family Loan Ledger Administrator";
   const email = process.env.SUPER_USER_EMAIL?.trim().toLowerCase();
   const password = process.env.SUPER_USER_PASSWORD ?? "";
 

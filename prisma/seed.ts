@@ -4,7 +4,18 @@ import { demoChildren } from "../lib/demo-data";
 
 const prisma = new PrismaClient();
 
+function assertDemoSeedAllowed() {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Refusing to load demo data in production. Provision the super user with pnpm db:create-super instead.");
+  }
+  if (process.env.ALLOW_DEMO_SEED !== "true") {
+    throw new Error("Demo seeding deletes existing data. Set ALLOW_DEMO_SEED=true only for a disposable development database.");
+  }
+}
+
 async function main() {
+  assertDemoSeedAllowed();
+
   await prisma.auditLog.deleteMany();
   await prisma.ledgerEntry.deleteMany();
   await prisma.loanAccount.deleteMany();
@@ -14,7 +25,7 @@ async function main() {
   const passwordHash = await bcrypt.hash("FamilyDemo2026!", 12);
   await prisma.user.create({
     data: {
-      name: "KinLedger Super User",
+      name: "Family Loan Ledger Super User",
       email: "super@demo.family",
       passwordHash,
       role: UserRole.SUPER_USER,

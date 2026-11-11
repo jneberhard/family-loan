@@ -35,7 +35,7 @@ function ContactForm({ defaultSubject = "General question" }: { defaultSubject?:
 
     form.reset();
     setStatus("sent");
-    setMessage("Thank you. Your message has been sent to KinLedger.");
+    setMessage("Thank you. Your message has been sent to Family Loan Ledger.");
   }
 
   return (
@@ -161,9 +161,9 @@ export function ContactModal({
           >
             <header className="contact-modal-header">
               <div>
-                <span className="section-kicker">Contact KinLedger</span>
+                <span className="section-kicker">Contact Family Loan Ledger</span>
                 <h2 id={titleId}>How can we help?</h2>
-                <p>Send us a note and the KinLedger team will follow up.</p>
+                <p>Send us a note and the Family Loan Ledger team will follow up.</p>
               </div>
               <button
                 ref={closeRef}

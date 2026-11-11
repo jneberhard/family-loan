@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { createSession } from "@/lib/session";
+import { createMobileSessionToken, createSession } from "@/lib/session";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
@@ -14,8 +15,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+    const ipLimit = await checkRateLimit({
+      scope: "login-ip",
+      identity: getClientIp(request),
+      limit: 30,
+      windowMs: 15 * 60 * 1000,
+    });
+    const emailLimit = await checkRateLimit({
+      scope: "login-email",
+      identity: normalizedEmail,
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (!ipLimit.allowed || !emailLimit.allowed) {
+      return rateLimitResponse(Math.max(
+        !ipLimit.allowed ? ipLimit.retryAfterSeconds : 0,
+        !emailLimit.allowed ? emailLimit.retryAfterSeconds : 0,
+      ));
+    }
+
     const user = await prisma.user.findFirst({
-      where: { email: email.toLowerCase().trim(), deletedAt: null },
+      where: { email: normalizedEmail, deletedAt: null },
       include: { childAccount: true, family: true },
     });
 
@@ -53,7 +74,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: rejected
-            ? "This parent-lender application was not approved. Contact KinLedger support for help."
+            ? "This parent-lender application was not approved. Contact Family Loan Ledger support for help."
             : "Your parent-lender application is still waiting for approval.",
           status: user.family?.approvalStatus,
         },
@@ -71,7 +92,7 @@ export async function POST(request: Request) {
       include: { childAccount: true },
     });
 
-    await createSession({
+    const session = {
       userId: signedInUser.id,
       familyId: signedInUser.familyId ?? undefined,
       role: signedInUser.role,
@@ -79,13 +100,21 @@ export async function POST(request: Request) {
       name: signedInUser.name,
       sessionVersion: signedInUser.sessionVersion,
       mustChangePassword: signedInUser.mustChangePassword,
-    });
+      mfaVerified: false,
+    } as const;
+    await createSession(session);
 
-    return NextResponse.json({
+    const response: Record<string, unknown> = {
       ok: true,
       role: signedInUser.role,
       mustChangePassword: signedInUser.mustChangePassword,
-    });
+      mfaRequired: signedInUser.role === "SUPER_USER",
+      mfaSetupRequired: signedInUser.role === "SUPER_USER" && !signedInUser.mfaEnabledAt,
+    };
+    if (request.headers.get("x-kinledger-client") === "native" && signedInUser.role !== "SUPER_USER") {
+      response.token = await createMobileSessionToken(session);
+    }
+    return NextResponse.json(response, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json(
       { error: "Sign in is unavailable until the database is connected." },

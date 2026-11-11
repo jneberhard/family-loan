@@ -82,13 +82,13 @@ export function ParentRegistrationForm() {
         </label>
       </div>
       <p className="registration-note">
-        Submitting creates a pending parent-lender workspace. A KinLedger super user
+        Submitting creates a pending parent-lender workspace. A Family Loan Ledger super user
         must approve it before you can sign in or create child accounts.
       </p>
       <label className="legal-acknowledgment">
         <input name="legalAcknowledgment" type="checkbox" required />
         <span>
-          I understand KinLedger is a record-keeping tool, not a legally binding loan
+          I understand Family Loan Ledger is a record-keeping tool, not a legally binding loan
           agreement or professional advice, and I have read the{" "}
           <Link href="/legal" target="_blank" rel="noreferrer">Legal &amp; Loan Disclaimer</Link>.
         </span>

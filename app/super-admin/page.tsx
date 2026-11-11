@@ -11,6 +11,7 @@ export default async function SuperAdminPage() {
   if (!session) redirect("/login");
   if (session.mustChangePassword) redirect("/change-password");
   if (session.role !== "SUPER_USER") redirect("/dashboard");
+  if (!session.mfaVerified) redirect("/mfa");
 
   const families = await prisma.family.findMany({
     include: {
@@ -18,6 +19,11 @@ export default async function SuperAdminPage() {
       _count: { select: { accounts: { where: { deletedAt: null } } } },
     },
     orderBy: [{ approvalStatus: "asc" }, { createdAt: "desc" }],
+  });
+  const deletionRequests = await prisma.accountDeletionRequest.findMany({
+    where: { status: "PENDING" },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, email: true, role: true, source: true, createdAt: true },
   });
 
   return (
@@ -32,6 +38,7 @@ export default async function SuperAdminPage() {
         childCount: family._count.accounts,
         reviewNote: family.reviewNote,
       }))}
+      initialDeletionRequests={deletionRequests.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() }))}
     />
   );
 }

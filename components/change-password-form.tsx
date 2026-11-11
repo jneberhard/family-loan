@@ -35,7 +35,7 @@ export function ChangePasswordForm() {
       setLoading(false);
       return;
     }
-    router.push(result.role === "SUPER_USER" ? "/super-admin" : "/dashboard");
+    router.push(result.role === "SUPER_USER" ? "/mfa" : "/dashboard");
     router.refresh();
   }
 

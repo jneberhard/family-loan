@@ -1,6 +1,6 @@
-# KinLedger
+# Family Loan Ledger
 
-KinLedger is a family-loan SaaS application for parents who lend money to their
+Family Loan Ledger is a family-loan SaaS application for parents who lend money to their
 children and want a private, transparent record. Parents are family
 administrators; children receive read-only access to their own account.
 
@@ -8,7 +8,8 @@ administrators; children receive read-only access to their own account.
 
 - Super-user, parent, and child sign-in with secure HTTP-only session cookies
 - Browser-session, database-revocable sign-in with a 24-hour safety ceiling and forced password changes for temporary credentials
-- Durable account lockout after repeated failed sign-in attempts
+- Durable account lockout and shared database-backed rate limits for sign-in and account creation
+- Required authenticator-app MFA for the super-user account, with one-time recovery codes
 - Show/hide controls on sign-in, registration, temporary-password, and password-change fields
 - Server-enforced `SUPER_USER`, `ADMIN`, and `CHILD` permissions
 - Public “Become a parent lender” application with approval-required access
@@ -39,6 +40,7 @@ administrators; children receive read-only access to their own account.
 - Smooth scrolling that cooperates with Next.js route transitions
 - Same-origin API request validation, Content Security Policy, and production security headers
 - Public privacy notice at `/privacy`
+- In-app and external account-deletion requests, with identifying details removed while shared family ledgers are retained
 - Prisma schema for PostgreSQL
 - Eight months of realistic seed history for one parent and three children
 - Vercel and Neon-ready configuration
@@ -50,6 +52,36 @@ administrators; children receive read-only access to their own account.
 - PostgreSQL on Neon
 - Prisma ORM
 - Vercel
+
+## Mobile apps
+
+The Expo app for iOS and Android is in `apps/mobile`. It uses the existing
+Family Loan Ledger API at `https://familyloanledger.com` and stores its short-lived
+sign-in token in the device's secure storage. Mobile tokens are recorded per device on the server and revoked when
+the app signs out. If the device is offline, its local token is still cleared
+and the server token expires within 24 hours. For local development, point
+`EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to the local web server. Production
+builds use `https://familyloanledger.com` unless overridden by the EAS environment.
+
+Mobile development uses Node.js 22.13 or newer with the current Expo SDK.
+Store builds use Expo Application Services (EAS). After signing in to an Expo
+account and setting `EXPO_PUBLIC_API_URL` to the production HTTPS origin in
+the EAS production environment, run either:
+
+```powershell
+pnpm install
+pnpm mobile
+```
+
+```powershell
+pnpm --filter @familyloanledger/mobile build:android
+pnpm --filter @familyloanledger/mobile build:ios
+```
+
+The mobile project is configured with the store identifiers
+`com.familyloanledger.app`. Store submission still requires developer accounts, final
+privacy and account-deletion flows, store listing assets, and review-ready test
+access.
 
 ## Local setup
 
@@ -85,11 +117,22 @@ The application now lives directly in this folder; there is no second nested
 
    Save the output as `SESSION_SECRET` in `.env`.
 
+   Create a separate 32-byte key for encrypting the super-user authenticator
+   secret at rest:
+
+   ```powershell
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+   Save that output as `MFA_ENCRYPTION_KEY`. Add both secrets to the production
+   deployment environment. The rate limiter stores HMACed identities in the
+   database; it does not store raw email addresses or IP addresses.
+
 4. To enable the contact form, create a sending-only API key in Resend and add:
 
    ```env
    RESEND_API_KEY="re_..."
-   RESEND_FROM_EMAIL="KinLedger <onboarding@resend.dev>"
+   RESEND_FROM_EMAIL="Family Loan Ledger <onboarding@resend.dev>"
    CONTACT_TO_EMAIL="jreberhard3@gmail.com"
    CRON_SECRET="a-second-long-random-secret"
    REMINDER_TIME_ZONE="America/Denver"
@@ -104,8 +147,19 @@ The application now lives directly in this folder; there is no second nested
 
    ```bash
    pnpm db:push
-   pnpm db:seed
    ```
+
+   To load the destructive demo seed into a disposable development database,
+   explicitly opt in from PowerShell:
+
+   ```powershell
+   $env:ALLOW_DEMO_SEED = "true"
+   pnpm db:seed
+   Remove-Item Env:ALLOW_DEMO_SEED
+   ```
+
+   The seed command refuses to run when `NODE_ENV=production` and also refuses
+   to run without the explicit opt-in.
 
    For an empty production Neon database, run `pnpm db:push` but do not run the
    demo seed. Configure unique `SUPER_USER_*` values and use
@@ -138,7 +192,7 @@ Change or remove these demo passwords before using real family data.
 
 1. A prospective parent selects **Become a parent lender** and submits their
    family workspace, login information, and preferred monthly interest day.
-2. KinLedger creates the family and parent administrator in `PENDING` status.
+2. Family Loan Ledger creates the family and parent administrator in `PENDING` status.
    Pending or rejected parents cannot establish a login session.
 3. A `SUPER_USER` opens `/super-admin` and approves or declines the application.
 4. Once approved, the parent can sign in and create child accounts.
@@ -187,8 +241,8 @@ The route requires `CRON_SECRET`, evaluates the configured
 for the same child and date.
 
 Add `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `CRON_SECRET`,
-`REMINDER_TIME_ZONE`, and the production `NEXT_PUBLIC_APP_URL` to the Vercel
-Production environment. Verify a sending domain in Resend before emailing
+`REMINDER_TIME_ZONE`, and set `NEXT_PUBLIC_APP_URL` to
+`https://familyloanledger.com` in the Vercel Production environment. Verify a sending domain in Resend before emailing
 children at addresses other than the Resend account owner.
 
 Super-user accounts are not publicly creatable. Provision them through the seed
@@ -230,7 +284,7 @@ A payment made before the monthly posting date reduces the balance used from
 the payment date onward, producing the correct partial-month interest.
 
 Parents can use **Change APR** on a child account to set a new rate and effective
-date. KinLedger records this as a zero-dollar rate-change ledger event. Earlier
+date. Family Loan Ledger records this as a zero-dollar rate-change ledger event. Earlier
 balance intervals retain their historical APR, while all outstanding and future
 loan balances for that child use the new APR from the selected date forward.
 
@@ -264,7 +318,7 @@ Adjustment signs are preserved:
 - a negative adjustment reduces the child’s balance;
 - for example, an adjustment of `-500.00` records a $500 family gift.
 
-After an edit or removal, KinLedger recalculates all displayed running balances
+After an edit or removal, Family Loan Ledger recalculates all displayed running balances
 from the remaining chronological ledger entries.
 
 ## Deploy to Vercel with Neon
@@ -272,7 +326,8 @@ from the remaining chronological ledger entries.
 1. Create a Neon PostgreSQL project.
 2. Import this repository into Vercel.
 3. Add `DATABASE_URL`, `DIRECT_URL`, and `SESSION_SECRET` to the Vercel project
-   environment variables. Set `NEXT_PUBLIC_APP_URL` to the final Vercel URL so
+   environment variables. Set `NEXT_PUBLIC_APP_URL` to
+   `https://familyloanledger.com` so
    social previews resolve correctly.
 4. Apply the Prisma schema to the production database:
 
@@ -290,10 +345,12 @@ schema operations, matching Neon's recommended connection pattern.
 
 - `Family`: workspace, approval status, review note, and monthly posting preference
 - `User`: super user, one or more parent administrators, or a read-only child
+- `MobileSession`: revocable, expiring bearer session for one mobile device
 - `LoanAccount`: one child loan with its default annual rate
 - `LedgerEntry`: dated financial line item for loans, payments, interest,
   adjustments, and effective APR changes
 - `AuditLog`: record of important account and ledger changes
+- `AccountDeletionRequest`: pending external requests and a minimal completion record for deleted accounts
 
 Authorization checks live on the server. Hiding controls in the interface is
 only a convenience; child accounts cannot call write endpoints successfully.
@@ -302,10 +359,20 @@ only a convenience; child accounts cannot call write endpoints successfully.
 
 - Passwords are hashed with bcrypt and new passwords require at least 12 characters.
 - Five failed sign-in attempts lock the account for 15 minutes.
+- Sign-in, parent registration, and family-managed account creation also use
+  shared PostgreSQL rate limits so the limits apply across server instances.
+- Every super-user sign-in requires an authenticator code. The authenticator
+  secret is encrypted using `MFA_ENCRYPTION_KEY`; ten one-time recovery codes
+  are shown during enrollment and only their hashes are stored. Save the codes
+  securely. If the authenticator and all recovery codes are lost, an operator
+  must restore access through a controlled database recovery procedure.
 - Signed HTTP-only cookies are browser-session cookies, so closing the browser
   session signs the user out. Tokens also expire after 24 hours as a safety
   ceiling. Password changes increment a database session version, immediately
   invalidating other sessions.
+- Mobile bearer tokens have a server-side per-device session record and are
+  revoked on sign-out, password change, and account deletion. Expired or revoked
+  records are pruned after 30 days.
 - Production cookies use the `__Host-` prefix, `Secure`, `SameSite=Lax`, and path `/`.
 - Mutating API requests reject cross-site browser origins.
 - Security headers restrict framing, content types, referrers, browser features,
@@ -318,12 +385,13 @@ only a convenience; child accounts cannot call write endpoints successfully.
 - Database connections require TLS, and secrets belong only in `.env` locally
   and Vercel environment variables in deployment.
 
-MFA is intentionally deferred. Configure MFA for the super user before handling
-sensitive production family data. Resend delivery is also deferred until the
-API key and sender settings are added. The privacy notice is available at
-`/privacy`. Privacy requests are directed to the homepage contact form and ask
-the requester to include a phone number and account number for verification;
-the support email address is not displayed on the privacy page.
+Resend notices are sent after the API key and
+sender settings are added. The privacy notice is at `/privacy`; users can
+request deletion from the signed-in mobile app or at `/delete-account`. A
+super-user verifies and completes external requests. Deletion removes sign-in
+and identifying details while preserving shared ledger entries in anonymized
+form. A family's last administrator must arrange continued admin access before
+deletion can complete.
 
 ## Commands
 

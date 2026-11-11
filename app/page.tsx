@@ -24,8 +24,8 @@ export default async function Home() {
     <main className="landing-shell">
       <nav className="landing-nav container">
         <Link href="/" className="brand">
-          <Image src="/kinledger-logo.png" alt="" width={46} height={46} priority />
-          <span>KinLedger</span>
+          <Image src="/family-loan-ledger-logo.png" alt="" width={46} height={46} priority />
+          <span>Family Loan Ledger</span>
         </Link>
         <div className="landing-nav-actions">
           <ContactModal triggerClassName="button button-ghost" />
@@ -61,7 +61,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="KinLedger balance preview">
+        <div className="hero-visual" aria-label="Family Loan Ledger balance preview">
           <div className="hero-orbit orbit-one" />
           <div className="hero-orbit orbit-two" />
           <div className="preview-card">
@@ -103,7 +103,7 @@ export default async function Home() {
             <h2>Structure without the awkwardness.</h2>
           </div>
           <p>
-            KinLedger gives everyone the same numbers and the right level of access,
+            Family Loan Ledger gives everyone the same numbers and the right level of access,
             so conversations can focus on progress—not spreadsheets.
           </p>
         </div>
@@ -129,13 +129,13 @@ export default async function Home() {
       <section className="contact-section" id="contact">
         <div className="container contact-grid">
           <div className="contact-copy">
-            <span className="section-kicker">Contact KinLedger</span>
+            <span className="section-kicker">Contact Family Loan Ledger</span>
             <h2>Questions about lending clearly within your family?</h2>
             <p>
               Send us a note about parent-lender accounts, technical support,
               privacy, or anything else you would like to understand.
             </p>
-            <span className="contact-email">Messages are delivered securely to the KinLedger team.</span>
+            <span className="contact-email">Messages are delivered securely to the Family Loan Ledger team.</span>
           </div>
           <ContactModal
             triggerLabel="Open contact form"
@@ -145,7 +145,7 @@ export default async function Home() {
       </section>
 
       <section className="cta-section container">
-        <Image src="/kinledger-logo.png" alt="" width={88} height={88} />
+        <Image src="/family-loan-ledger-logo.png" alt="" width={88} height={88} />
         <div>
           <span className="section-kicker">Start with confidence</span>
           <h2>A healthier way to lend within the family.</h2>
@@ -155,7 +155,7 @@ export default async function Home() {
       </section>
 
       <footer className="landing-footer container">
-        <span>© 2026 KinLedger</span>
+        <span>© 2026 Family Loan Ledger</span>
         <span className="footer-links">
           Private by design · Clear by default · <Link href="/guide">User guide</Link> · <Link href="/legal">Legal</Link> · <Link href="/privacy">Privacy</Link>
         </span>
