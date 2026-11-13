@@ -122,7 +122,6 @@ export function PricingPlans({
       <div className="pricing-explainer">
         <h2>How family pricing works</h2>
         <p>The subscription belongs to the family workspace, not to each person. One payment covers up to 4 parent administrators and 10 child loan accounts. If a paid subscription ends, the original parent and the first child account created remain active on Free; other accounts are hidden with their records kept safely. Renewing the family subscription restores access to the full family.</p>
-        <p>Family workspaces created before subscriptions were introduced keep grandfathered paid-tier access, including these account limits. They are not automatically billed.</p>
         {!signedIn && <p>Free workspaces are available immediately. A paid family plan activates as soon as checkout confirms payment.</p>}
         {signedIn && !isPaid && canManageBilling && billingStatus === "INCOMPLETE" && <p>Your family is on Free until checkout is completed and your subscription is confirmed.</p>}
       </div>

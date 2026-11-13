@@ -45,8 +45,9 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const status = message === "UNAUTHORIZED" ? 401 : message === "FORBIDDEN" ? 403 : 500;
+    const encryptionKeyMissing = message === "MFA_ENCRYPTION_KEY must be a 64-character hexadecimal value in production.";
     return NextResponse.json(
-      { error: status === 401 ? "Sign in again." : status === 403 ? "Super-user authentication is required." : "Unable to enable MFA." },
+      { error: status === 401 ? "Sign in again." : status === 403 ? "Super-user authentication is required." : encryptionKeyMissing ? "MFA is not configured on the server. Add a 64-character hexadecimal MFA_ENCRYPTION_KEY in the deployment environment, then redeploy." : "Unable to enable MFA." },
       { status, headers: { "Cache-Control": "no-store" } },
     );
   }

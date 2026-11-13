@@ -11,14 +11,17 @@ export async function POST() {
     }
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
-      select: { mfaEnabledAt: true },
+      select: { email: true, mfaEnabledAt: true },
     });
     if (!user || user.mfaEnabledAt) {
       return NextResponse.json({ error: "MFA is already enabled for this account." }, { status: 409 });
     }
     const secret = newTotpSecret();
+    const issuer = "Family Loan Ledger";
+    const label = `${issuer}:${user.email}`;
+    const otpAuthUrl = `otpauth://totp/${encodeURIComponent(label)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
     return NextResponse.json(
-      { secret },
+      { secret, otpAuthUrl },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

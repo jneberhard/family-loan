@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 
 type Status = { enabled: boolean; verified: boolean };
 
@@ -9,6 +10,7 @@ export function MfaGate() {
   const router = useRouter();
   const [status, setStatus] = useState<Status | null>(null);
   const [secret, setSecret] = useState("");
+  const [otpAuthUrl, setOtpAuthUrl] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
@@ -37,8 +39,9 @@ export function MfaGate() {
     setLoading(true);
     setError("");
     try {
-      const result = await request<{ secret: string }>("/api/auth/mfa/setup", "POST", {});
+      const result = await request<{ secret: string; otpAuthUrl: string }>("/api/auth/mfa/setup", "POST", {});
       setSecret(result.secret);
+      setOtpAuthUrl(result.otpAuthUrl);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to start setup.");
     } finally {
@@ -126,7 +129,10 @@ export function MfaGate() {
 
   return (
     <form className="login-form" onSubmit={enableMfa}>
-      <p>Add a new account in your authenticator app and enter this setup key. Keep it private.</p>
+      <p>Scan this QR code with your authenticator app, then enter the six-digit code it shows. Keep the QR code and setup key private.</p>
+      <div className="mfa-qr-code">
+        <QRCodeSVG value={otpAuthUrl} size={220} level="M" includeMargin aria-label="Authenticator setup QR code" />
+      </div>
       <label>
         Authenticator setup key
         <input value={secret} readOnly onFocus={(event) => event.currentTarget.select()} />
