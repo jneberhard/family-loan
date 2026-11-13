@@ -36,8 +36,8 @@ export async function sendBalanceEmail({
   if (!apiKey) throw new Error("EMAIL_NOT_CONFIGURED");
 
   const formattedBalance = money.format(balance);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  const signInLine = appUrl ? `\nReview your ledger: ${appUrl}/login` : "";
+  const appUrl = "https://familyloanledger.com";
+  const signInLine = `\nReview your ledger: ${appUrl}/login`;
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send(
     {
@@ -67,7 +67,7 @@ export async function sendBalanceEmail({
               <p>Your current family-loan balance as of ${escapeHtml(asOf)} is:</p>
               <div style="font-size:34px;font-weight:700;color:#2E7D32;margin:22px 0">${formattedBalance}</div>
               <p><strong>Interest rate:</strong> ${apr.toFixed(3)}% APR</p>
-              ${appUrl ? `<p><a href="${escapeHtml(`${appUrl}/login`)}" style="display:inline-block;background:#D4AF37;color:#292816;text-decoration:none;border-radius:10px;padding:12px 18px;font-weight:700">Review your ledger</a></p>` : ""}
+              <p><a href="${escapeHtml(`${appUrl}/login`)}" style="display:inline-block;background:#D4AF37;color:#292816;text-decoration:none;border-radius:10px;padding:12px 18px;font-weight:700">Review your ledger</a></p>
               <p style="color:#6B7280;font-size:13px;margin-top:28px">This balance is provided for your records. Please contact your family administrator with questions.</p>
             </div>
           </div>
