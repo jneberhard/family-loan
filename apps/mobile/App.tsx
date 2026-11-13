@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AppState,
   ActivityIndicator,
   Alert,
   Linking,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -20,7 +22,10 @@ import * as SecureStore from "expo-secure-store";
 const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://familyloanledger.com").replace(/\/$/, "");
 const TOKEN_KEY = "kinledger.session";
 const PASSWORD_CHANGE_KEY = "kinledger.mustChangePassword";
+const LAST_ACTIVITY_KEY = "kinledger.lastActivity";
 const GREEN = "#215c43";
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+const WARNING_BEFORE_MS = 60 * 1000;
 
 function todayDate() {
   const today = new Date();
@@ -92,6 +97,18 @@ export default function App() {
   const [deletionComplete, setDeletionComplete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [idleWarning, setIdleWarning] = useState(false);
+  const [idleRemainingMs, setIdleRemainingMs] = useState(IDLE_TIMEOUT_MS);
+  const lastActivityAt = useRef(Date.now());
+  const idleSignOutStarted = useRef(false);
+
+  const recordActivity = useCallback(() => {
+    lastActivityAt.current = Date.now();
+    idleSignOutStarted.current = false;
+    void SecureStore.setItemAsync(LAST_ACTIVITY_KEY, String(lastActivityAt.current));
+    setIdleRemainingMs(IDLE_TIMEOUT_MS);
+    setIdleWarning(false);
+  }, []);
 
   const loadHome = useCallback(async (activeToken: string) => {
     const result = await api<HomeData>("/api/mobile/home", {}, activeToken);
@@ -102,9 +119,11 @@ export default function App() {
     Promise.all([
       SecureStore.getItemAsync(TOKEN_KEY),
       SecureStore.getItemAsync(PASSWORD_CHANGE_KEY),
+      SecureStore.getItemAsync(LAST_ACTIVITY_KEY),
     ])
-      .then(([savedToken, savedPasswordChange]) => {
+      .then(([savedToken, savedPasswordChange, savedLastActivity]) => {
         if (!savedToken) return;
+        lastActivityAt.current = Number(savedLastActivity) || Date.now();
         setToken(savedToken);
         if (savedPasswordChange === "true") {
           setMustChangePassword(true);
@@ -113,11 +132,43 @@ export default function App() {
         return loadHome(savedToken).catch(async () => {
           await SecureStore.deleteItemAsync(TOKEN_KEY);
           await SecureStore.deleteItemAsync(PASSWORD_CHANGE_KEY);
+          await SecureStore.deleteItemAsync(LAST_ACTIVITY_KEY);
           setToken(null);
         });
       })
       .catch(() => setToken(null));
   }, [loadHome]);
+
+  useEffect(() => {
+    if (!token) return;
+    const checkIdle = () => {
+      const remaining = IDLE_TIMEOUT_MS - (Date.now() - lastActivityAt.current);
+      setIdleRemainingMs(Math.max(0, remaining));
+      if (remaining <= 0) {
+        setIdleWarning(false);
+        if (!idleSignOutStarted.current) {
+          idleSignOutStarted.current = true;
+          void signOut();
+        }
+      } else {
+        setIdleWarning(remaining <= WARNING_BEFORE_MS);
+      }
+    };
+    const interval = setInterval(checkIdle, 1000);
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") checkIdle();
+    });
+    checkIdle();
+    return () => {
+      clearInterval(interval);
+      appStateSubscription.remove();
+    };
+  }, [token]);
+
+  const trackTextInput = (update: (value: string) => void) => (value: string) => {
+    recordActivity();
+    update(value);
+  };
 
   useEffect(() => {
     if (!showDeletion || !token) return;
@@ -140,6 +191,8 @@ export default function App() {
       }
       await SecureStore.setItemAsync(TOKEN_KEY, result.token);
       await SecureStore.setItemAsync(PASSWORD_CHANGE_KEY, String(result.mustChangePassword));
+      lastActivityAt.current = Date.now();
+      await SecureStore.setItemAsync(LAST_ACTIVITY_KEY, String(lastActivityAt.current));
       setToken(result.token);
       setMustChangePassword(result.mustChangePassword);
       setPassword("");
@@ -231,6 +284,7 @@ export default function App() {
     } finally {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       await SecureStore.deleteItemAsync(PASSWORD_CHANGE_KEY);
+      await SecureStore.deleteItemAsync(LAST_ACTIVITY_KEY);
       setToken(null);
       setData(null);
       setMustChangePassword(false);
@@ -285,7 +339,20 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} onTouchStartCapture={recordActivity}>
+      <Modal visible={idleWarning && Boolean(token)} transparent animationType="fade" onRequestClose={recordActivity}>
+        <View style={styles.idleOverlay}>
+          <View style={styles.idleDialog}>
+            <Text style={styles.idleTitle}>Still there?</Text>
+            <Text style={styles.body}>
+              You’ll be signed out in {Math.floor(idleRemainingMs / 60000)}:{String(Math.ceil((idleRemainingMs % 60000) / 1000)).padStart(2, "0")} due to inactivity.
+            </Text>
+            <Pressable style={styles.button} onPress={recordActivity} accessibilityRole="button">
+              <Text style={styles.buttonText}>Stay signed in</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         style={styles.flex}
@@ -319,9 +386,9 @@ export default function App() {
               </Pressable>
             )}
             <Text style={styles.sectionTitle}>Confirm with your current password</Text>
-            <TextInput style={styles.input} value={deletionPassword} onChangeText={setDeletionPassword} placeholder="Current password" secureTextEntry autoCapitalize="none" />
+            <TextInput style={styles.input} value={deletionPassword} onChangeText={trackTextInput(setDeletionPassword)} placeholder="Current password" secureTextEntry autoCapitalize="none" />
             <Text style={styles.body}>For immediate deletion, type DELETE below. This cannot be undone.</Text>
-            <TextInput style={styles.input} value={deletionConfirmation} onChangeText={setDeletionConfirmation} placeholder="Type DELETE" autoCapitalize="characters" />
+            <TextInput style={styles.input} value={deletionConfirmation} onChangeText={trackTextInput(setDeletionConfirmation)} placeholder="Type DELETE" autoCapitalize="characters" />
             <Pressable style={styles.dangerButton} onPress={requestDeletion} disabled={busy || !deletionPassword || deletionConfirmation !== "DELETE" || hasPendingDeletionRequest}>
               {busy ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>{hasPendingDeletionRequest ? "Deletion request pending" : "Delete my account"}</Text>}
             </Pressable>
@@ -400,9 +467,9 @@ export default function App() {
                             </Pressable>
                           ))}
                         </View>
-                        <TextInput style={styles.input} value={entryAmount} onChangeText={setEntryAmount} placeholder={entryType === "ADJUSTMENT" ? "Amount (negative allowed)" : "Amount in dollars"} keyboardType="decimal-pad" />
-                        <TextInput style={styles.input} value={entryDescription} onChangeText={setEntryDescription} placeholder="Description" />
-                        <TextInput style={styles.input} value={entryDate} onChangeText={setEntryDate} placeholder="Effective date (YYYY-MM-DD)" autoCapitalize="none" />
+                        <TextInput style={styles.input} value={entryAmount} onChangeText={trackTextInput(setEntryAmount)} placeholder={entryType === "ADJUSTMENT" ? "Amount (negative allowed)" : "Amount in dollars"} keyboardType="decimal-pad" />
+                        <TextInput style={styles.input} value={entryDescription} onChangeText={trackTextInput(setEntryDescription)} placeholder="Description" />
+                        <TextInput style={styles.input} value={entryDate} onChangeText={trackTextInput(setEntryDate)} placeholder="Effective date (YYYY-MM-DD)" autoCapitalize="none" />
                         <Pressable style={styles.button} onPress={() => saveEntry(account.id)} disabled={busy}>
                           {busy ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Save entry</Text>}
                         </Pressable>
@@ -419,8 +486,8 @@ export default function App() {
             <Text style={styles.brand}>Family Loan Ledger</Text>
             <Text style={styles.authTitle}>Choose a new password</Text>
             <Text style={styles.intro}>Your temporary password must be replaced before you continue.</Text>
-            <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="Temporary password" secureTextEntry autoCapitalize="none" />
-            <TextInput style={styles.input} value={newPassword} onChangeText={setNewPassword} placeholder="New password (12+ characters)" secureTextEntry autoCapitalize="none" />
+            <TextInput style={styles.input} value={password} onChangeText={trackTextInput(setPassword)} placeholder="Temporary password" secureTextEntry autoCapitalize="none" />
+            <TextInput style={styles.input} value={newPassword} onChangeText={trackTextInput(setNewPassword)} placeholder="New password (12+ characters)" secureTextEntry autoCapitalize="none" />
             <Pressable style={styles.button} onPress={updatePassword} disabled={busy}>
               {busy ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Save new password</Text>}
             </Pressable>
@@ -434,8 +501,8 @@ export default function App() {
             <Text style={styles.brand}>Family Loan Ledger</Text>
             <Text style={styles.authTitle}>Family loans, clearly managed.</Text>
             <Text style={styles.intro}>Sign in to see your family loan ledger.</Text>
-            <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Email address" keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
-            <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="Password" secureTextEntry autoCapitalize="none" autoComplete="password" onSubmitEditing={signIn} />
+            <TextInput style={styles.input} value={email} onChangeText={trackTextInput(setEmail)} placeholder="Email address" keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
+            <TextInput style={styles.input} value={password} onChangeText={trackTextInput(setPassword)} placeholder="Password" secureTextEntry autoCapitalize="none" autoComplete="password" onSubmitEditing={signIn} />
             <Pressable style={styles.button} onPress={signIn} disabled={busy || !email || !password}>
               {busy ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Sign in</Text>}
             </Pressable>
@@ -463,6 +530,9 @@ export default function App() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f6f7f3" },
+  idleOverlay: { flex: 1, backgroundColor: "rgba(12, 26, 18, 0.54)", justifyContent: "center", padding: 22 },
+  idleDialog: { backgroundColor: "#fff", borderRadius: 20, padding: 24, gap: 14 },
+  idleTitle: { color: "#173c2a", fontSize: 22, fontWeight: "800" },
   flex: { flex: 1 },
   content: { padding: 22, paddingTop: 18, paddingBottom: 40 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 38 },

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KeyRound } from "lucide-react";
 import { ChangePasswordForm } from "@/components/change-password-form";
+import { InactivityTimeout } from "@/components/inactivity-timeout";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ export default async function ChangePasswordPage() {
   if (!session) redirect("/login");
 
   return (
+    <InactivityTimeout>
     <main className="login-page">
       <section className="login-story">
         <div className="login-story-inner">
@@ -44,5 +46,6 @@ export default async function ChangePasswordPage() {
         </div>
       </section>
     </main>
+    </InactivityTimeout>
   );
 }

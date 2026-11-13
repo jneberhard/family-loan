@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { DemoDashboard } from "@/components/demo-dashboard";
+import { InactivityTimeout } from "@/components/inactivity-timeout";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import type { DemoChild } from "@/lib/demo-data";
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
   }));
 
   return (
+    <InactivityTimeout>
     <DemoDashboard
       initialChildren={children}
       initialRole={session.role === "ADMIN" ? "parent" : "child"}
@@ -72,5 +74,6 @@ export default async function DashboardPage() {
         isCurrent: admin.id === session.userId,
       }))}
     />
+    </InactivityTimeout>
   );
 }

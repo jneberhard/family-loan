@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { SuperAdminDashboard } from "@/components/super-admin-dashboard";
+import { InactivityTimeout } from "@/components/inactivity-timeout";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Super user console" };
@@ -27,6 +28,7 @@ export default async function SuperAdminPage() {
   });
 
   return (
+    <InactivityTimeout>
     <SuperAdminDashboard
       initialApplications={families.map((family) => ({
         id: family.id,
@@ -40,5 +42,6 @@ export default async function SuperAdminPage() {
       }))}
       initialDeletionRequests={deletionRequests.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() }))}
     />
+    </InactivityTimeout>
   );
 }

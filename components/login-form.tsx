@@ -26,6 +26,7 @@ export function LoginForm() {
       return;
     }
     const result = await response.json();
+    localStorage.removeItem("family-loan-last-activity");
     router.push(
       result.mustChangePassword
         ? "/change-password"

@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { MfaGate } from "@/components/mfa-gate";
+import { InactivityTimeout } from "@/components/inactivity-timeout";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Secure super-user sign-in" };
@@ -14,6 +15,7 @@ export default async function MfaPage() {
   if (session.mfaVerified) redirect("/super-admin");
 
   return (
+    <InactivityTimeout>
     <main className="login-page">
       <section className="login-story">
         <div className="login-story-inner">
@@ -34,5 +36,6 @@ export default async function MfaPage() {
         </div>
       </section>
     </main>
+    </InactivityTimeout>
   );
 }
