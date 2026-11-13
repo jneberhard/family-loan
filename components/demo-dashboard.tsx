@@ -134,6 +134,8 @@ export function DemoDashboard({
     isCurrent: true,
   }],
   hasPaidFamily = true,
+  maxChildAccounts = null,
+  maxParentAccounts = null,
 }: {
   initialChildren?: DemoChild[];
   initialRole?: Role;
@@ -143,6 +145,8 @@ export function DemoDashboard({
   viewerName?: string;
   initialAdmins?: FamilyAdmin[];
   hasPaidFamily?: boolean;
+  maxChildAccounts?: number | null;
+  maxParentAccounts?: number | null;
 }) {
   // Resolve the greeting on the client so it follows the viewer's local clock.
   const [timeGreeting, setTimeGreeting] = useState<string | null>(null);
@@ -836,7 +840,7 @@ export function DemoDashboard({
         <div className="sidebar-family">
           <div className="side-label-row">
             <span className="side-label">Family accounts</span>
-            {role === "parent" && (hasPaidFamily || !children.length ? <button onClick={() => setModal("child")} aria-label="Add child"><Plus size={16} /></button> : <Link href="/pricing" aria-label="Upgrade to add children"><Plus size={16} /></Link>)}
+            {role === "parent" && (maxChildAccounts === null || children.length < maxChildAccounts ? <button onClick={() => setModal("child")} aria-label="Add child"><Plus size={16} /></button> : !hasPaidFamily && <Link href="/pricing" aria-label="Upgrade to add children"><Plus size={16} /></Link>)}
           </div>
           {children.map((child) => {
             const balance = ledgers.get(child.id)?.at(-1)?.balance ?? 0;
@@ -1253,7 +1257,7 @@ export function DemoDashboard({
       {modal === "access" && (
         <Modal title="Family access" subtitle="Manage full-access parents and read-only child accounts." onClose={() => setModal(null)}>
           <div className="access-list">
-            <div className="access-section-title"><span>Family administrators</span>{hasPaidFamily && <button onClick={() => setModal("coparent")}><UserPlus size={14} /> Add co-parent</button>}</div>
+            <div className="access-section-title"><span>Family administrators ({admins.length}{maxParentAccounts === null ? "" : ` / ${maxParentAccounts}`})</span>{(maxParentAccounts === null || admins.length < maxParentAccounts) && <button onClick={() => setModal("coparent")}><UserPlus size={14} /> Add co-parent</button>}</div>
             {admins.map((admin) => (
               <div className="access-row admin-access" key={admin.id}>
                 <i>{admin.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</i>
@@ -1269,7 +1273,7 @@ export function DemoDashboard({
                 </div>
               </div>
             ))}
-            <div className="access-section-title child-access-title"><span>Child accounts</span></div>
+            <div className="access-section-title child-access-title"><span>Child accounts ({children.length}{maxChildAccounts === null ? "" : ` / ${maxChildAccounts}`})</span></div>
             {children.map((child) => (
               <div className="access-row" key={child.id}>
                 <i style={{ background: `${child.accent}22`, color: child.accent }}>{child.initials}</i>
@@ -1285,7 +1289,7 @@ export function DemoDashboard({
             ))}
             {!children.length && <p className="empty-access">No child accounts have been created yet.</p>}
           </div>
-          <div className="modal-actions"><button className="button button-soft" onClick={() => setModal(null)}>Close</button>{hasPaidFamily || !children.length ? <button className="button button-primary" onClick={() => setModal("child")}><UserPlus size={16} /> Add child</button> : <Link className="button button-primary" href="/pricing">Upgrade to add children</Link>}</div>
+          <div className="modal-actions"><button className="button button-soft" onClick={() => setModal(null)}>Close</button>{maxChildAccounts === null || children.length < maxChildAccounts ? <button className="button button-primary" onClick={() => setModal("child")}><UserPlus size={16} /> Add child</button> : !hasPaidFamily ? <Link className="button button-primary" href="/pricing">Upgrade to add children</Link> : <span className="empty-access">Plan limit reached</span>}</div>
         </Modal>
       )}
 

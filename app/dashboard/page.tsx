@@ -4,7 +4,7 @@ import { InactivityTimeout } from "@/components/inactivity-timeout";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import type { DemoChild } from "@/lib/demo-data";
-import { hasPaidAccess } from "@/lib/billing";
+import { getFamilyLimits, hasPaidAccess } from "@/lib/billing";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +43,7 @@ export default async function DashboardPage() {
       },
     },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    ...(!family || !hasPaidAccess(family) ? { take: 1 } : {}),
+    ...(family ? (getFamilyLimits(family).maxChildAccounts === null ? {} : { take: getFamilyLimits(family).maxChildAccounts! }) : { take: 1 }),
   });
 
   const children: DemoChild[] = accounts.map((account, index) => ({
@@ -72,10 +72,12 @@ export default async function DashboardPage() {
       initialRole={session.role === "ADMIN" ? "parent" : "child"}
       demoMode={false}
       hasPaidFamily={Boolean(family && hasPaidAccess(family))}
+      maxChildAccounts={family ? getFamilyLimits(family).maxChildAccounts : 1}
+      maxParentAccounts={family ? getFamilyLimits(family).maxParentAdmins : 1}
       interestPostingDay={family?.interestPostingDay ?? 1}
       familyName={family?.name ?? "Family workspace"}
       viewerName={session.name}
-      initialAdmins={(family?.users ?? []).slice(0, family && hasPaidAccess(family) ? undefined : 1).map((admin) => ({
+      initialAdmins={(family?.users ?? []).slice(0, family ? (getFamilyLimits(family).maxParentAdmins ?? undefined) : 1).map((admin) => ({
         ...admin,
         isCurrent: admin.id === session.userId,
       }))}

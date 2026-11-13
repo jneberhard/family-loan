@@ -304,11 +304,12 @@ also provides a direct **Change posting day** control for parent administrators.
 
 The Free plan includes one parent administrator and the first child account. The
 family subscription covers the entire workspace at $2.99 per month or $29.99 per
-year; members are not billed individually. It includes additional parent and
-child accounts along with the existing family ledger features. When a paid plan
+year; members are not billed individually. It includes up to four parent
+administrators and ten child loan accounts along with the existing family ledger features. When a paid plan
 ends, the original parent and earliest active child remain available on Free.
 Other accounts and their records are kept but hidden until the family renews.
-Existing workspaces are grandfathered with their current access.
+Existing workspaces are grandfathered with paid-tier access and the same
+four-parent and ten-child limits; they are not automatically billed.
 
 Free workspaces activate immediately at signup. Paid signups open Stripe
 Checkout during registration and activate the full family as soon as payment
@@ -328,8 +329,8 @@ Stripe in test mode while verifying checkout and webhook delivery, then use the
 live keys and live webhook secret for production. This project currently uses
 Prisma schema synchronization rather than a checked-in migration history, so
 run `pnpm db:push` against the existing database before deploying the billing
-code. Existing families default to grandfathered access when the new columns
-are added.
+code. Existing families default to grandfathered paid-tier access when the new
+columns are added, with the same four-parent and ten-child limits.
 
 Vercel calls `/api/cron/post-interest` once daily. The route evaluates the
 configured `REMINDER_TIME_ZONE`, selects approved families whose posting day

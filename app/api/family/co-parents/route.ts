@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { writeAudit } from "@/lib/audit";
-import { hasPaidAccess } from "@/lib/billing";
+import { getFamilyLimits } from "@/lib/billing";
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +34,13 @@ export async function POST(request: Request) {
     const coParent = await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT "id" FROM "Family" WHERE "id" = ${session.familyId} FOR UPDATE`;
       const familyPlan = await tx.family.findUnique({ where: { id: session.familyId }, select: { plan: true, billingStatus: true, subscriptionPeriodEnd: true } });
-      if (familyPlan && !hasPaidAccess(familyPlan)) throw new Error("FREE_COPARENT_LIMIT");
+      if (familyPlan) {
+        const { maxParentAdmins } = getFamilyLimits(familyPlan);
+        const existingAdmins = await tx.user.count({ where: { familyId: session.familyId, role: "ADMIN", deletedAt: null } });
+        if (maxParentAdmins !== null && existingAdmins >= maxParentAdmins) {
+          throw new Error(maxParentAdmins === 1 ? "FREE_COPARENT_LIMIT" : "PAID_COPARENT_LIMIT");
+        }
+      }
       const created = await tx.user.create({
         data: {
           name,
@@ -64,6 +70,7 @@ export async function POST(request: Request) {
     }
     const message = error instanceof Error ? error.message : "";
     if (message === "FREE_COPARENT_LIMIT") return NextResponse.json({ error: "The free plan includes one parent. Upgrade the family plan to add a co-parent." }, { status: 402 });
+    if (message === "PAID_COPARENT_LIMIT") return NextResponse.json({ error: "The family plan includes up to 4 parent administrators. Remove an administrator before adding another." }, { status: 409 });
     const status = message === "FORBIDDEN" ? 403 : message === "UNAUTHORIZED" ? 401 : 500;
     return NextResponse.json(
       { error: status === 500 ? "Unable to add the co-parent account." : message },

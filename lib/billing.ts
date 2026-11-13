@@ -68,6 +68,12 @@ export function hasPaidAccess(family: Pick<Family, "plan" | "billingStatus" | "s
   return !family.subscriptionPeriodEnd || family.subscriptionPeriodEnd > new Date();
 }
 
+export function getFamilyLimits(family: Pick<Family, "plan" | "billingStatus" | "subscriptionPeriodEnd">) {
+  if (family.plan === "LEGACY") return { maxChildAccounts: 10, maxParentAdmins: 4 };
+  if (hasPaidAccess(family)) return { maxChildAccounts: 10, maxParentAdmins: 4 };
+  return { maxChildAccounts: 1, maxParentAdmins: 1 };
+}
+
 export function stripeBillingStatus(status: Stripe.Subscription.Status): BillingStatus {
   if (status === "active" || status === "trialing") return "ACTIVE";
   if (status === "past_due" || status === "unpaid") return "PAST_DUE";
@@ -84,23 +90,26 @@ export function familyPlanFromMetadata(value: string | undefined): FamilyPlan {
 }
 
 export async function isUserAllowedOnCurrentPlan(user: { id: string; role: string; familyId: string | null }, family: Pick<Family, "plan" | "billingStatus" | "subscriptionPeriodEnd">) {
-  if (user.role === "SUPER_USER" || hasPaidAccess(family)) return true;
+  if (user.role === "SUPER_USER") return true;
   if (!user.familyId) return false;
+  const limits = getFamilyLimits(family);
   if (user.role === "ADMIN") {
-    const firstAdmin = await prisma.user.findFirst({
+    const admins = await prisma.user.findMany({
       where: { familyId: user.familyId, role: "ADMIN", deletedAt: null },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: { id: true },
+      ...(limits.maxParentAdmins === null ? {} : { take: limits.maxParentAdmins }),
     });
-    return firstAdmin?.id === user.id;
+    return admins.some((admin) => admin.id === user.id);
   }
   if (user.role === "CHILD") {
-    const firstAccount = await prisma.loanAccount.findFirst({
+    const childAccounts = await prisma.loanAccount.findMany({
       where: { familyId: user.familyId, deletedAt: null },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: { childUserId: true },
+      ...(limits.maxChildAccounts === null ? {} : { take: limits.maxChildAccounts }),
     });
-    return firstAccount?.childUserId === user.id;
+    return childAccounts.some((account) => account.childUserId === user.id);
   }
   return false;
 }
@@ -111,11 +120,12 @@ export async function isAccountVisibleOnCurrentPlan(familyId: string, accountId:
     select: { plan: true, billingStatus: true, subscriptionPeriodEnd: true },
   });
   if (!family) return false;
-  if (hasPaidAccess(family)) return true;
-  const firstAccount = await prisma.loanAccount.findFirst({
+  const limits = getFamilyLimits(family);
+  const accounts = await prisma.loanAccount.findMany({
     where: { familyId, deletedAt: null },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { id: true },
+    ...(limits.maxChildAccounts === null ? {} : { take: limits.maxChildAccounts }),
   });
-  return firstAccount?.id === accountId;
+  return accounts.some((account) => account.id === accountId);
 }

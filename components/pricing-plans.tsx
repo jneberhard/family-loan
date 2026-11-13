@@ -93,8 +93,8 @@ export function PricingPlans({
           <div className="pricing-alternative">or <strong>$29.99 per year</strong> <span>($2.50/month)</span></div>
           <p>One subscription covers the whole family workspace. Members are not billed individually.</p>
           <ul>
-            <li><Check /> Multiple parent administrators</li>
-            <li><Check /> Multiple child loan accounts</li>
+            <li><Check /> Up to 4 parent administrators</li>
+            <li><Check /> Up to 10 child loan accounts</li>
             <li><Check /> Everything in Free</li>
             <li><Check /> Family access management</li>
             <li><Check /> Balance reminders and account tools</li>
@@ -121,7 +121,8 @@ export function PricingPlans({
 
       <div className="pricing-explainer">
         <h2>How family pricing works</h2>
-        <p>The subscription belongs to the family workspace, not to each person. One payment covers every parent and child account in the family. If a paid subscription ends, the original parent and the first child account created remain active on Free; other accounts are hidden with their records kept safely. Renewing the family subscription restores access to the full family.</p>
+        <p>The subscription belongs to the family workspace, not to each person. One payment covers up to 4 parent administrators and 10 child loan accounts. If a paid subscription ends, the original parent and the first child account created remain active on Free; other accounts are hidden with their records kept safely. Renewing the family subscription restores access to the full family.</p>
+        <p>Family workspaces created before subscriptions were introduced keep grandfathered paid-tier access, including these account limits. They are not automatically billed.</p>
         {!signedIn && <p>Free workspaces are available immediately. A paid family plan activates as soon as checkout confirms payment.</p>}
         {signedIn && !isPaid && canManageBilling && billingStatus === "INCOMPLETE" && <p>Your family is on Free until checkout is completed and your subscription is confirmed.</p>}
       </div>

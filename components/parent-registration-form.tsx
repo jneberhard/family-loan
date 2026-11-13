@@ -78,8 +78,8 @@ export function ParentRegistrationForm({ initialPlan = "FREE" }: { initialPlan?:
         <div className="plan-choice-grid">
           {([
             ["FREE", "Free", "$0", "One parent and one child"],
-            ["MONTHLY", "Monthly", "$2.99 / month", "Full family access"],
-            ["YEARLY", "Yearly", "$29.99 / year", "Full family access · save $5.89"],
+            ["MONTHLY", "Monthly", "$2.99 / month", "Up to 4 parents and 10 children"],
+            ["YEARLY", "Yearly", "$29.99 / year", "Up to 4 parents and 10 children · save $5.89"],
           ] as const).map(([value, title, price, description]) => (
             <label className={`plan-choice ${plan === value ? "selected" : ""}`} key={value}>
               <input type="radio" name="plan" value={value} checked={plan === value} onChange={() => setPlan(value)} />

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateRunningLedger, type LedgerItem } from "@/lib/finance";
 import { requireSession } from "@/lib/session";
-import { hasPaidAccess } from "@/lib/billing";
+import { getFamilyLimits } from "@/lib/billing";
 
 export async function GET() {
   try {
@@ -29,7 +29,7 @@ export async function GET() {
           },
         },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        ...(!family || !hasPaidAccess(family) ? { take: 1 } : {}),
+        ...(family ? (getFamilyLimits(family).maxChildAccounts === null ? {} : { take: getFamilyLimits(family).maxChildAccounts! }) : { take: 1 }),
       });
 
     return NextResponse.json(
