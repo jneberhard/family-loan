@@ -133,6 +133,7 @@ export function DemoDashboard({
     email: "james@demo.family",
     isCurrent: true,
   }],
+  hasPaidFamily = true,
 }: {
   initialChildren?: DemoChild[];
   initialRole?: Role;
@@ -141,6 +142,7 @@ export function DemoDashboard({
   familyName?: string;
   viewerName?: string;
   initialAdmins?: FamilyAdmin[];
+  hasPaidFamily?: boolean;
 }) {
   // Resolve the greeting on the client so it follows the viewer's local clock.
   const [timeGreeting, setTimeGreeting] = useState<string | null>(null);
@@ -799,6 +801,7 @@ export function DemoDashboard({
           <button onClick={() => { document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" }); setMobileNav(false); }}><ReceiptText size={19} /> All transactions</button>
           {role === "parent" && <button onClick={() => { setModal("access"); setMobileNav(false); }}><Users size={19} /> Family access</button>}
           {role === "parent" && <button onClick={() => { setModal("settings"); setMobileNav(false); }}><Settings size={19} /> Settings</button>}
+          {!demoMode && role === "parent" && <Link href="/pricing" onClick={() => setMobileNav(false)}><WalletCards size={19} /> Plans &amp; billing</Link>}
           {role === "parent" && <span className="side-label side-label-help">Help</span>}
           {role === "parent" && <Link href="/guide" className="desktop-help-guide" onClick={() => setMobileNav(false)}><BookOpen size={19} /> User guide</Link>}
           {role === "parent" && (
@@ -833,7 +836,7 @@ export function DemoDashboard({
         <div className="sidebar-family">
           <div className="side-label-row">
             <span className="side-label">Family accounts</span>
-            {role === "parent" && <button onClick={() => setModal("child")} aria-label="Add child"><Plus size={16} /></button>}
+            {role === "parent" && (hasPaidFamily || !children.length ? <button onClick={() => setModal("child")} aria-label="Add child"><Plus size={16} /></button> : <Link href="/pricing" aria-label="Upgrade to add children"><Plus size={16} /></Link>)}
           </div>
           {children.map((child) => {
             const balance = ledgers.get(child.id)?.at(-1)?.balance ?? 0;
@@ -1250,7 +1253,7 @@ export function DemoDashboard({
       {modal === "access" && (
         <Modal title="Family access" subtitle="Manage full-access parents and read-only child accounts." onClose={() => setModal(null)}>
           <div className="access-list">
-            <div className="access-section-title"><span>Family administrators</span><button onClick={() => setModal("coparent")}><UserPlus size={14} /> Add co-parent</button></div>
+            <div className="access-section-title"><span>Family administrators</span>{hasPaidFamily && <button onClick={() => setModal("coparent")}><UserPlus size={14} /> Add co-parent</button>}</div>
             {admins.map((admin) => (
               <div className="access-row admin-access" key={admin.id}>
                 <i>{admin.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</i>
@@ -1282,7 +1285,7 @@ export function DemoDashboard({
             ))}
             {!children.length && <p className="empty-access">No child accounts have been created yet.</p>}
           </div>
-          <div className="modal-actions"><button className="button button-soft" onClick={() => setModal(null)}>Close</button><button className="button button-primary" onClick={() => setModal("child")}><UserPlus size={16} /> Add child</button></div>
+          <div className="modal-actions"><button className="button button-soft" onClick={() => setModal(null)}>Close</button>{hasPaidFamily || !children.length ? <button className="button button-primary" onClick={() => setModal("child")}><UserPlus size={16} /> Add child</button> : <Link className="button button-primary" href="/pricing">Upgrade to add children</Link>}</div>
         </Modal>
       )}
 

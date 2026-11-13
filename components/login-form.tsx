@@ -26,6 +26,10 @@ export function LoginForm() {
       return;
     }
     const result = await response.json();
+    if (typeof result.checkoutUrl === "string") {
+      window.location.assign(result.checkoutUrl);
+      return;
+    }
     localStorage.removeItem("family-loan-last-activity");
     router.push(
       result.mustChangePassword

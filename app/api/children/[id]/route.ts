@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
+import { isAccountVisibleOnCurrentPlan } from "@/lib/billing";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -36,6 +37,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       },
     });
     if (!current) return NextResponse.json({ error: "Child account not found." }, { status: 404 });
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, current.id))) return NextResponse.json({ error: "Child account not found." }, { status: 404 });
 
     const passwordHash = temporaryPassword ? await bcrypt.hash(temporaryPassword, 12) : undefined;
     const updated = await prisma.$transaction(async (tx) => {
@@ -101,6 +103,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
       },
     });
     if (!current) return NextResponse.json({ error: "Child account not found." }, { status: 404 });
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, current.id))) return NextResponse.json({ error: "Child account not found." }, { status: 404 });
 
     await prisma.$transaction(async (tx) => {
       const deletedAt = new Date();

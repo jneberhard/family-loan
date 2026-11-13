@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/session";
 import { postAccountInterest } from "@/lib/post-interest";
+import { isAccountVisibleOnCurrentPlan } from "@/lib/billing";
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json({ error: "Enter a valid interest period." }, { status: 400 });
     }
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, accountId))) return NextResponse.json({ error: "Account not found." }, { status: 404 });
 
     const result = await postAccountInterest({
       accountId,

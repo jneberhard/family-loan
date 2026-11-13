@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { writeAudit } from "@/lib/audit";
+import { isAccountVisibleOnCurrentPlan } from "@/lib/billing";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -27,6 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       select: { id: true, name: true },
     });
     if (!account) return NextResponse.json({ error: "Account not found." }, { status: 404 });
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, id))) return NextResponse.json({ error: "Account not found." }, { status: 404 });
 
     const result = await prisma.$transaction(async (tx) => {
       const effectiveAt = new Date(`${effectiveDate}T12:00:00Z`);

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { writeAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
+import { isUserAllowedOnCurrentPlan } from "@/lib/billing";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -32,6 +33,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       select: { id: true, name: true, email: true },
     });
     if (!current) return NextResponse.json({ error: "Co-parent not found." }, { status: 404 });
+    const familyPlan = await prisma.family.findUnique({ where: { id: session.familyId }, select: { plan: true, billingStatus: true, subscriptionPeriodEnd: true } });
+    if (!familyPlan || !(await isUserAllowedOnCurrentPlan({ id: current.id, role: "ADMIN", familyId: session.familyId }, familyPlan))) return NextResponse.json({ error: "Co-parent not found." }, { status: 404 });
 
     const passwordHash = temporaryPassword ? await bcrypt.hash(temporaryPassword, 12) : undefined;
     const updated = await prisma.$transaction(async (tx) => {
@@ -88,6 +91,8 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
       select: { id: true, name: true, email: true },
     });
     if (!current) return NextResponse.json({ error: "Co-parent not found." }, { status: 404 });
+    const familyPlan = await prisma.family.findUnique({ where: { id: session.familyId }, select: { plan: true, billingStatus: true, subscriptionPeriodEnd: true } });
+    if (!familyPlan || !(await isUserAllowedOnCurrentPlan({ id: current.id, role: "ADMIN", familyId: session.familyId }, familyPlan))) return NextResponse.json({ error: "Co-parent not found." }, { status: 404 });
 
     const activeAdmins = await prisma.user.count({
       where: { familyId: session.familyId, role: "ADMIN", deletedAt: null },

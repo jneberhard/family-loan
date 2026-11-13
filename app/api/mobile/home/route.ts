@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateRunningLedger, type LedgerItem } from "@/lib/finance";
 import { requireSession } from "@/lib/session";
+import { hasPaidAccess } from "@/lib/billing";
 
 export async function GET() {
   try {
@@ -10,14 +11,13 @@ export async function GET() {
       return NextResponse.json({ error: "This account cannot open the family app yet." }, { status: 403 });
     }
 
-    const [family, accounts] = await Promise.all([
-      session.familyId
-        ? prisma.family.findUnique({
-            where: { id: session.familyId },
-            select: { name: true, interestPostingDay: true },
-          })
-        : Promise.resolve(null),
-      prisma.loanAccount.findMany({
+    const family = session.familyId
+      ? await prisma.family.findUnique({
+          where: { id: session.familyId },
+          select: { name: true, interestPostingDay: true, plan: true, billingStatus: true, subscriptionPeriodEnd: true },
+        })
+      : null;
+    const accounts = await prisma.loanAccount.findMany({
         where:
           session.role === "ADMIN"
             ? { familyId: session.familyId, deletedAt: null }
@@ -28,9 +28,9 @@ export async function GET() {
             orderBy: [{ effectiveAt: "asc" }, { createdAt: "asc" }],
           },
         },
-        orderBy: { createdAt: "asc" },
-      }),
-    ]);
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        ...(!family || !hasPaidAccess(family) ? { take: 1 } : {}),
+      });
 
     return NextResponse.json(
       {

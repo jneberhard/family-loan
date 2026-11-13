@@ -30,7 +30,7 @@ export default async function SuperAdminPage() {
   return (
     <InactivityTimeout>
     <SuperAdminDashboard
-      initialApplications={families.map((family) => ({
+      initialApplications={families.filter((family) => family.approvalStatus !== "PENDING" || (family.plan !== "MONTHLY" && family.plan !== "YEARLY")).map((family) => ({
         id: family.id,
         familyName: family.name,
         parentName: family.users[0]?.name ?? "Unknown parent",

@@ -11,8 +11,10 @@ import {
   LogOut,
   Search,
   ShieldCheck,
+  Ticket,
   Users,
 } from "lucide-react";
+import { CouponManager } from "@/components/coupon-manager";
 
 type Application = {
   id: string;
@@ -128,6 +130,7 @@ export function SuperAdminDashboard({
           <span>Family Loan Ledger</span>
         </Link>
         <span className="super-badge"><ShieldCheck size={15} /> Super user console</span>
+        <Link href="#coupon-management" className="button button-soft super-coupon-link"><Ticket size={15} /> Coupon codes</Link>
         <form action="/api/auth/logout" method="post">
           <button className="button button-soft"><LogOut size={16} /> Sign out</button>
         </form>
@@ -232,6 +235,7 @@ export function SuperAdminDashboard({
             )}
           </div>
         </section>
+        <CouponManager />
       </section>
     </main>
   );

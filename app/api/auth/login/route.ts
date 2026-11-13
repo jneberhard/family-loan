@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { createMobileSessionToken, createSession } from "@/lib/session";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { createFamilyCheckoutSession, isUserAllowedOnCurrentPlan } from "@/lib/billing";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
@@ -69,6 +70,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "The email or password is incorrect." }, { status: 401 });
     }
 
+    if (
+      user.role === "ADMIN" &&
+      user.family?.approvalStatus === "PENDING" &&
+      (user.family.plan === "MONTHLY" || user.family.plan === "YEARLY")
+    ) {
+      if (request.headers.get("x-kinledger-client") === "native") {
+        return NextResponse.json({ error: "Finish subscription checkout on the website to activate this family." }, { status: 403 });
+      }
+      if (user.family.billingStatus === "ACTIVE") {
+        return NextResponse.json({ error: "Payment received. Family activation is finishing; please sign in again shortly." }, { status: 403 });
+      }
+      const checkoutUrl = await createFamilyCheckoutSession(user.family, { email: user.email }, user.family.plan);
+      return NextResponse.json({ checkoutUrl }, { headers: { "Cache-Control": "no-store" } });
+    }
+
     if (user.role !== "SUPER_USER" && user.family?.approvalStatus !== "APPROVED") {
       const rejected = user.family?.approvalStatus === "REJECTED";
       return NextResponse.json(
@@ -78,6 +94,12 @@ export async function POST(request: Request) {
             : "Your parent-lender application is still waiting for approval.",
           status: user.family?.approvalStatus,
         },
+        { status: 403 },
+      );
+    }
+    if (user.role !== "SUPER_USER" && user.family && !(await isUserAllowedOnCurrentPlan(user, user.family))) {
+      return NextResponse.json(
+        { error: "This account is hidden while the family is on the free plan. The family administrator can restore access by renewing the subscription." },
         { status: 403 },
       );
     }

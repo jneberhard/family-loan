@@ -20,6 +20,21 @@ enum ApprovalStatus {
   REJECTED
 }
 
+enum FamilyPlan {
+  FREE
+  MONTHLY
+  YEARLY
+  LEGACY
+}
+
+enum BillingStatus {
+  NONE
+  INCOMPLETE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
 enum EntryType {
   LOAN
   PAYMENT
@@ -44,6 +59,12 @@ model Family {
   name               String
   interestPostingDay Int            @default(1)
   approvalStatus     ApprovalStatus @default(PENDING)
+  plan               FamilyPlan     @default(LEGACY)
+  billingStatus      BillingStatus  @default(NONE)
+  stripeCustomerId   String?        @unique
+  stripeSubscriptionId String?      @unique
+  subscriptionPeriodEnd DateTime?
+  cancelAtPeriodEnd  Boolean        @default(false)
   reviewedAt         DateTime?
   reviewNote         String?
   createdAt          DateTime       @default(now())

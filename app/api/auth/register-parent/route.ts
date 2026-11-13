@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { createFamilyCheckoutSession, stripePriceId } from "@/lib/billing";
 
 export async function POST(request: Request) {
   try {
@@ -13,6 +14,7 @@ export async function POST(request: Request) {
     const password = String(body.password ?? "");
     const interestPostingDay = Number(body.interestPostingDay ?? 1);
     const legalAcknowledgment = body.legalAcknowledgment === true;
+    const plan = body.plan === "MONTHLY" || body.plan === "YEARLY" ? body.plan : "FREE";
 
     if (!name || !familyName || !email || !password) {
       return NextResponse.json({ error: "All required fields must be completed." }, { status: 400 });
@@ -50,12 +52,15 @@ export async function POST(request: Request) {
     if (!Number.isInteger(interestPostingDay) || interestPostingDay < 1 || interestPostingDay > 28) {
       return NextResponse.json({ error: "Interest posting day must be between 1 and 28." }, { status: 400 });
     }
+    if (plan !== "FREE") await stripePriceId(plan);
 
     const family = await prisma.family.create({
       data: {
         name: familyName,
         interestPostingDay,
-        approvalStatus: "PENDING",
+        approvalStatus: plan === "FREE" ? "APPROVED" : "PENDING",
+        plan,
+        billingStatus: "NONE",
         users: {
           create: {
             name,
@@ -67,13 +72,24 @@ export async function POST(request: Request) {
       },
       select: { id: true, name: true, approvalStatus: true },
     });
+    let checkoutUrl: string | null = null;
+    if (plan !== "FREE") {
+      try {
+        checkoutUrl = await createFamilyCheckoutSession({ id: family.id, stripeCustomerId: null }, { email }, plan);
+      } catch {
+        return NextResponse.json({ applicationId: family.id, familyName: family.name, status: family.approvalStatus, checkoutUrl: null }, { status: 201 });
+      }
+    }
 
     return NextResponse.json(
       {
         applicationId: family.id,
         familyName: family.name,
         status: family.approvalStatus,
-        message: "Your application was submitted for super-user approval.",
+        checkoutUrl,
+        message: plan === "FREE"
+          ? "Your free family workspace is ready. Sign in to get started."
+          : "Continue to secure checkout to activate your family subscription.",
       },
       { status: 201 },
     );

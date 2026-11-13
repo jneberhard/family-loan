@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { writeAudit } from "@/lib/audit";
+import { hasPaidAccess } from "@/lib/billing";
 
 export async function POST(request: Request) {
   try {
@@ -31,6 +32,9 @@ export async function POST(request: Request) {
 
     const passwordHash = await bcrypt.hash(temporaryPassword, 12);
     const coParent = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Family" WHERE "id" = ${session.familyId} FOR UPDATE`;
+      const familyPlan = await tx.family.findUnique({ where: { id: session.familyId }, select: { plan: true, billingStatus: true, subscriptionPeriodEnd: true } });
+      if (familyPlan && !hasPaidAccess(familyPlan)) throw new Error("FREE_COPARENT_LIMIT");
       const created = await tx.user.create({
         data: {
           name,
@@ -59,6 +63,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "An account already exists for this email address." }, { status: 409 });
     }
     const message = error instanceof Error ? error.message : "";
+    if (message === "FREE_COPARENT_LIMIT") return NextResponse.json({ error: "The free plan includes one parent. Upgrade the family plan to add a co-parent." }, { status: 402 });
     const status = message === "FORBIDDEN" ? 403 : message === "UNAUTHORIZED" ? 401 : 500;
     return NextResponse.json(
       { error: status === 500 ? "Unable to add the co-parent account." : message },

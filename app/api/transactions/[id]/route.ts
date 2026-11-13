@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { writeAudit } from "@/lib/audit";
+import { isAccountVisibleOnCurrentPlan } from "@/lib/billing";
 
 async function currentApr(
   tx: Prisma.TransactionClient,
@@ -31,6 +32,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       include: { account: { select: { annualRate: true } } },
     });
     if (!current) return NextResponse.json({ error: "Entry not found." }, { status: 404 });
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, current.accountId))) return NextResponse.json({ error: "Entry not found." }, { status: 404 });
     const body = await request.json();
 
     if (current.type === "RATE_CHANGE") {
@@ -156,6 +158,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
       where: { id, deletedAt: null, account: { familyId: session.familyId, deletedAt: null } },
     });
     if (!current) return NextResponse.json({ error: "Entry not found." }, { status: 404 });
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, current.accountId))) return NextResponse.json({ error: "Entry not found." }, { status: 404 });
     const result = await prisma.$transaction(async (tx) => {
       const removed = await tx.ledgerEntry.update({
         where: { id },

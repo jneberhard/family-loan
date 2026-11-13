@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { writeAudit } from "@/lib/audit";
 import { sendBalanceEmail } from "@/lib/balance-email";
 import { prisma } from "@/lib/prisma";
+import { isAccountVisibleOnCurrentPlan } from "@/lib/billing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +58,10 @@ export async function GET(request: Request) {
   let skipped = 0;
   let failed = 0;
   for (const account of accounts) {
+    if (!(await isAccountVisibleOnCurrentPlan(account.familyId, account.id))) {
+      skipped += 1;
+      continue;
+    }
     if (
       account.lastBalanceReminderAt &&
       localDateParts(account.lastBalanceReminderAt, timeZone).key === today.key

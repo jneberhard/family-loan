@@ -3,6 +3,7 @@ import { writeAudit } from "@/lib/audit";
 import { sendBalanceEmail } from "@/lib/balance-email";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
+import { isAccountVisibleOnCurrentPlan } from "@/lib/billing";
 
 function balanceOf(transactions: { amount: { toString(): string } }[]) {
   return transactions.reduce((sum, entry) => sum + Number(entry.amount), 0);
@@ -27,6 +28,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
       },
     });
     if (!account) return NextResponse.json({ error: "Child account not found." }, { status: 404 });
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, id))) return NextResponse.json({ error: "Child account not found." }, { status: 404 });
 
     const balance = balanceOf(account.transactions);
     const asOf = new Intl.DateTimeFormat("en-US", {
@@ -92,6 +94,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       select: { id: true, balanceReminderDay: true },
     });
     if (!current) return NextResponse.json({ error: "Child account not found." }, { status: 404 });
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, id))) return NextResponse.json({ error: "Child account not found." }, { status: 404 });
 
     const updated = await prisma.$transaction(async (tx) => {
       const account = await tx.loanAccount.update({

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import type { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isUserAllowedOnCurrentPlan } from "@/lib/billing";
 
 export type Session = {
   userId: string;
@@ -91,12 +92,13 @@ export async function getSession(): Promise<Session | null> {
         sessionVersion: true,
         mustChangePassword: true,
         deletedAt: true,
-        family: { select: { approvalStatus: true } },
+        family: { select: { approvalStatus: true, plan: true, billingStatus: true, subscriptionPeriodEnd: true } },
         childAccount: { select: { id: true } },
       },
     });
     if (!user || user.deletedAt || user.sessionVersion !== payload.sessionVersion || user.role !== payload.role) return null;
     if (user.role !== "SUPER_USER" && user.family?.approvalStatus !== "APPROVED") return null;
+    if (user.role !== "SUPER_USER" && user.family && !(await isUserAllowedOnCurrentPlan(user, user.family))) return null;
     if (bearerToken) {
       if (typeof payload.jti !== "string") return null;
       const mobileSession = await prisma.mobileSession.findFirst({

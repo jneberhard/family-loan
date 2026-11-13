@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { writeAudit } from "@/lib/audit";
+import { isAccountVisibleOnCurrentPlan } from "@/lib/billing";
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
       where: { id: body.accountId, familyId: session.familyId, deletedAt: null },
     });
     if (!account) return NextResponse.json({ error: "Account not found." }, { status: 404 });
+    if (!(await isAccountVisibleOnCurrentPlan(session.familyId, account.id))) return NextResponse.json({ error: "Account not found." }, { status: 404 });
 
     if (!["LOAN", "PAYMENT", "ADJUSTMENT"].includes(body.type)) {
       return NextResponse.json({ error: "Invalid transaction type." }, { status: 400 });

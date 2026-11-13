@@ -12,7 +12,9 @@ administrators; children receive read-only access to their own account.
 - Required authenticator-app MFA for the super-user account, with one-time recovery codes
 - Show/hide controls on sign-in, registration, temporary-password, and password-change fields
 - Server-enforced `SUPER_USER`, `ADMIN`, and `CHILD` permissions
-- Public “Become a parent lender” application with approval-required access
+- Public family workspace signup with free and paid plan options
+- Free and family subscription plans with Stripe-hosted checkout
+- Super-user coupon-code creation and management
 - Super-user console for approving or declining parent-lender applications
 - A parent portfolio with one ledger per child
 - Parent-created child accounts with temporary credentials and read-only access
@@ -188,20 +190,21 @@ All seeded accounts use the password `FamilyDemo2026!`.
 
 Change or remove these demo passwords before using real family data.
 
-## Account approval workflow
+## Family signup
 
-1. A prospective parent selects **Become a parent lender** and submits their
-   family workspace, login information, and preferred monthly interest day.
-2. Family Loan Ledger creates the family and parent administrator in `PENDING` status.
-   Pending or rejected parents cannot establish a login session.
-3. A `SUPER_USER` opens `/super-admin` and approves or declines the application.
-4. Once approved, the parent can sign in and create child accounts.
-5. The parent gives each child their temporary password. A child can see only
-   their own ledger and cannot call parent write endpoints.
+Free signup activates the family workspace immediately. The free plan includes
+one parent and one child, with the existing ledger and read-only child access.
+Paid signup opens Stripe Checkout during registration; once payment succeeds,
+the webhook activates the whole family workspace. If the parent cancels
+checkout, signing in resumes the checkout flow. Older pending applications can
+still be reviewed from `/super-admin`.
+
+The parent gives each child their temporary password. A child can see only their
+own ledger and cannot call parent write endpoints.
 
 ## Co-parent access
 
-An approved parent can open **Family Access** from the dashboard and select
+The family parent can open **Family Access** from the dashboard and select
 **Add co-parent**. The parent supplies the co-parent's name, email address, and
 a temporary password of at least 12 characters.
 
@@ -296,6 +299,37 @@ A co-parent cannot remove their own account or the family's last administrator.
 **Settings** lets the parent rename the family workspace and choose the
 monthly interest-posting day from 1 through 28. The next-posting dashboard card
 also provides a direct **Change posting day** control for parent administrators.
+
+## Family plans and billing
+
+The Free plan includes one parent administrator and the first child account. The
+family subscription covers the entire workspace at $2.99 per month or $29.99 per
+year; members are not billed individually. It includes additional parent and
+child accounts along with the existing family ledger features. When a paid plan
+ends, the original parent and earliest active child remain available on Free.
+Other accounts and their records are kept but hidden until the family renews.
+Existing workspaces are grandfathered with their current access.
+
+Free workspaces activate immediately at signup. Paid signups open Stripe
+Checkout during registration and activate the full family as soon as payment
+is confirmed. If checkout is canceled, the parent can sign in to resume it.
+Stripe Checkout accepts discount codes. Super users can create percentage
+discounts and manage redemption limits in the coupon section at the bottom of
+the super-user console.
+
+Configure `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in the deployment
+environment. The app creates its monthly and yearly Stripe prices on first use.
+Enable the Stripe customer portal so a family billing owner can update payment
+details and cancel their subscription. Add a webhook endpoint at
+`/api/billing/webhook` and subscribe to
+`checkout.session.completed`, `customer.subscription.created`,
+`customer.subscription.updated`, and `customer.subscription.deleted`. Keep
+Stripe in test mode while verifying checkout and webhook delivery, then use the
+live keys and live webhook secret for production. This project currently uses
+Prisma schema synchronization rather than a checked-in migration history, so
+run `pnpm db:push` against the existing database before deploying the billing
+code. Existing families default to grandfathered access when the new columns
+are added.
 
 Vercel calls `/api/cron/post-interest` once daily. The route evaluates the
 configured `REMINDER_TIME_ZONE`, selects approved families whose posting day

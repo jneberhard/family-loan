@@ -8,7 +8,9 @@ export const metadata = {
   description: "Apply for a private Family Loan Ledger parent-lender workspace.",
 };
 
-export default function BecomeParentPage() {
+export default async function BecomeParentPage({ searchParams }: { searchParams: Promise<{ plan?: string }> }) {
+  const { plan: planParam } = await searchParams;
+  const initialPlan = planParam === "MONTHLY" || planParam === "YEARLY" ? planParam : "FREE";
   return (
     <main className="login-page registration-page">
       <section className="login-story">
@@ -18,7 +20,7 @@ export default function BecomeParentPage() {
           <span className="section-kicker light">Become a parent lender</span>
           <h1>Create a clear, private place for every family loan.</h1>
           <ul>
-            <li><CheckCircle2 /> Your application is reviewed before activation</li>
+            <li><CheckCircle2 /> Free access starts as soon as you sign up</li>
             <li><CheckCircle2 /> You control loans, payments, and interest</li>
             <li><CheckCircle2 /> Each child receives a private read-only account</li>
           </ul>
@@ -31,9 +33,9 @@ export default function BecomeParentPage() {
             <span>Family Loan Ledger</span>
           </div>
           <span className="login-icon"><ShieldCheck size={22} /></span>
-          <h2>Parent-lender application</h2>
+          <h2>Create your family workspace</h2>
           <p>Tell us who will manage your family’s loan workspace.</p>
-          <ParentRegistrationForm />
+          <ParentRegistrationForm initialPlan={initialPlan} />
           <div className="demo-callout">
             <span>Already approved?</span>
             <Link href="/login">Sign in →</Link>

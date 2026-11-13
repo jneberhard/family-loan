@@ -32,6 +32,7 @@ export default async function Home() {
           <ContactModal triggerClassName="button button-ghost" />
           <Link href="/demo" className="button button-gold">Demo</Link>
           <VideoNavLink />
+          <Link href="/pricing" className="button button-ghost">Pricing</Link>
           {session ? (
             <Link href={accountHref} className="button button-primary">Open dashboard</Link>
           ) : (

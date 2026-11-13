@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { writeAudit } from "@/lib/audit";
+import { hasPaidAccess } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
@@ -27,6 +28,12 @@ export async function POST(request: Request) {
     }
 
     const account = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "Family" WHERE "id" = ${session.familyId} FOR UPDATE`;
+      const family = await tx.family.findUnique({ where: { id: session.familyId }, select: { plan: true, billingStatus: true, subscriptionPeriodEnd: true } });
+      if (family && !hasPaidAccess(family)) {
+        const existingChildren = await tx.loanAccount.count({ where: { familyId: session.familyId, deletedAt: null } });
+        if (existingChildren >= 1) throw new Error("FREE_CHILD_LIMIT");
+      }
       const user = await tx.user.create({
         data: {
           name,
@@ -62,6 +69,7 @@ export async function POST(request: Request) {
     return NextResponse.json(account, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
+    if (message === "FREE_CHILD_LIMIT") return NextResponse.json({ error: "The free plan includes one child account. Upgrade the family plan to add more." }, { status: 402 });
     const status = message === "FORBIDDEN" ? 403 : message === "UNAUTHORIZED" ? 401 : 500;
     return NextResponse.json({ error: status === 500 ? "Unable to create account." : message }, { status });
   }
