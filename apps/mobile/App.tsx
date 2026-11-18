@@ -364,6 +364,7 @@ export default function App() {
             <Text style={styles.brand}>Family Loan Ledger</Text>
             <Text style={styles.authTitle}>Account deleted</Text>
             <Text style={styles.intro}>Your sign-in and identifying account details were removed. Your family’s shared loan ledger remains with identifying details removed.</Text>
+            <Text style={styles.footer}>Copyright 2026 JR Studios, LLC</Text>
           </View>
         ) : token && data && showDeletion && !mustChangePassword ? (
           <ScrollView contentContainerStyle={styles.deletionContent} keyboardShouldPersistTaps="handled">
@@ -398,6 +399,7 @@ export default function App() {
             <Pressable onPress={() => API_URL && Linking.openURL(`${API_URL}/terms`)} style={styles.centerLink} accessibilityRole="link">
               <Text style={styles.link}>Terms of Service</Text>
             </Pressable>
+            <Text style={styles.footer}>Copyright 2026 JR Studios, LLC</Text>
           </ScrollView>
         ) : token && data && !mustChangePassword ? (
           <ScrollView
@@ -483,6 +485,7 @@ export default function App() {
               </View>
             ))}
             <Text style={styles.footer}>Pull down to refresh your ledger.</Text>
+            <Text style={styles.footer}>Copyright 2026 JR Studios, LLC</Text>
           </ScrollView>
         ) : mustChangePassword ? (
           <ScrollView contentContainerStyle={styles.authContent} keyboardShouldPersistTaps="handled">
@@ -495,6 +498,7 @@ export default function App() {
               {busy ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Save new password</Text>}
             </Pressable>
             <Pressable onPress={signOut} style={styles.centerLink}><Text style={styles.link}>Sign out</Text></Pressable>
+            <Text style={styles.footer}>Copyright 2026 JR Studios, LLC</Text>
           </ScrollView>
         ) : token && !data ? (
           <View style={styles.loading}><ActivityIndicator size="large" color={GREEN} /><Text style={styles.body}>Loading your family…</Text></View>
@@ -531,6 +535,7 @@ export default function App() {
             >
               <Text style={styles.link}>Request account deletion</Text>
             </Pressable>
+            <Text style={styles.footer}>Copyright 2026 JR Studios, LLC</Text>
           </ScrollView>
         )}
       </KeyboardAvoidingView>

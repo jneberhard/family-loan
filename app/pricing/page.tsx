@@ -47,7 +47,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
         plan={family?.plan ?? "FREE"}
         billingStatus={family?.billingStatus ?? "NONE"}
       />
-      <footer className="landing-footer container"><span>© 2026 Family Loan Ledger</span><span>One plan covers your family workspace.</span></footer>
+      <footer className="landing-footer container"><span>Copyright 2026 JR Studios, LLC</span><span>One plan covers your family workspace.</span></footer>
     </main>
   );
 }
