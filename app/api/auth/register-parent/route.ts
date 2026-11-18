@@ -14,6 +14,7 @@ export async function POST(request: Request) {
     const password = String(body.password ?? "");
     const interestPostingDay = Number(body.interestPostingDay ?? 1);
     const legalAcknowledgment = body.legalAcknowledgment === true;
+    const termsAcknowledgment = body.termsAcknowledgment === true;
     const plan = body.plan === "MONTHLY" || body.plan === "YEARLY" ? body.plan : "FREE";
 
     if (!name || !familyName || !email || !password) {
@@ -28,6 +29,12 @@ export async function POST(request: Request) {
     if (!legalAcknowledgment) {
       return NextResponse.json(
         { error: "You must acknowledge the Legal & Loan Disclaimer." },
+        { status: 400 },
+      );
+    }
+    if (!termsAcknowledgment) {
+      return NextResponse.json(
+        { error: "You must agree to the Terms of Service." },
         { status: 400 },
       );
     }

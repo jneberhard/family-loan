@@ -28,6 +28,7 @@ export function ParentRegistrationForm({ initialPlan = "FREE" }: { initialPlan?:
         password: data.get("password"),
         interestPostingDay: data.get("interestPostingDay"),
         legalAcknowledgment: data.get("legalAcknowledgment") === "on",
+        termsAcknowledgment: data.get("termsAcknowledgment") === "on",
         plan,
       }),
     });
@@ -117,6 +118,13 @@ export function ParentRegistrationForm({ initialPlan = "FREE" }: { initialPlan?:
           I understand Family Loan Ledger is a record-keeping tool, not a legally binding loan
           agreement or professional advice, and I have read the{" "}
           <Link href="/legal" target="_blank" rel="noreferrer">Legal &amp; Loan Disclaimer</Link>.
+        </span>
+      </label>
+      <label className="legal-acknowledgment">
+        <input name="termsAcknowledgment" type="checkbox" required />
+        <span>
+          I agree to the <Link href="/terms" target="_blank" rel="noreferrer">Terms of Service</Link> and have read the{" "}
+          <Link href="/privacy" target="_blank" rel="noreferrer">Privacy Notice</Link>.
         </span>
       </label>
       {error && <p className="form-error" role="alert">{error}</p>}

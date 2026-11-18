@@ -18,7 +18,8 @@ export default function PrivacyPage() {
         </div>
         <span className="privacy-icon"><ShieldCheck size={22} /></span>
         <h1>Privacy notice</h1>
-        <p className="privacy-updated">Last updated November 11, 2026</p>
+        <p className="privacy-updated">Last updated November 18, 2026</p>
+        <p>Family Loan Ledger is operated by JR Studios, LLC.</p>
 
         <section>
           <h2>Information we handle</h2>

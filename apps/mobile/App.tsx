@@ -395,6 +395,9 @@ export default function App() {
             <Pressable onPress={() => API_URL && Linking.openURL(`${API_URL}/privacy`)} style={styles.centerLink} accessibilityRole="link">
               <Text style={styles.link}>Read the privacy notice</Text>
             </Pressable>
+            <Pressable onPress={() => API_URL && Linking.openURL(`${API_URL}/terms`)} style={styles.centerLink} accessibilityRole="link">
+              <Text style={styles.link}>Terms of Service</Text>
+            </Pressable>
           </ScrollView>
         ) : token && data && !mustChangePassword ? (
           <ScrollView
@@ -513,6 +516,13 @@ export default function App() {
               accessibilityRole="link"
             >
               <Text style={styles.link}>Privacy notice</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => API_URL && Linking.openURL(`${API_URL}/terms`)}
+              style={styles.centerLink}
+              accessibilityRole="link"
+            >
+              <Text style={styles.link}>Terms of Service</Text>
             </Pressable>
             <Pressable
               onPress={() => API_URL && Linking.openURL(`${API_URL}/delete-account`)}

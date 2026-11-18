@@ -189,7 +189,7 @@ export default async function Home() {
       <footer className="landing-footer container">
         <span>© 2026 Family Loan Ledger</span>
         <span className="footer-links">
-          Private by design · Clear by default · <Link href="/guide">User guide</Link> · <Link href="/legal">Legal</Link> · <Link href="/privacy">Privacy</Link>
+          Private by design · Clear by default · <Link href="/guide">User guide</Link> · <Link href="/terms">Terms</Link> · <Link href="/legal">Legal</Link> · <Link href="/privacy">Privacy</Link>
         </span>
       </footer>
     </main>
