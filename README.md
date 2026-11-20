@@ -85,6 +85,54 @@ The mobile project is configured with the store identifiers
 privacy and account-deletion flows, store listing assets, and review-ready test
 access.
 
+## Mobile advertising
+
+Free-plan parent dashboards include one Google AdMob banner. The server returns
+`advertising.showBanner` with the mobile home response using the same entitlement
+rules as family limits. Children, paid families, and grandfathered families do
+not receive banners. An older server response without this flag also shows no ad.
+Signing out, opening account deletion, or changing to a paid entitlement on the
+next home refresh removes the banner.
+
+The native config plugin contains the iOS and Android AdMob App IDs; banner IDs
+are in `apps/mobile/components/FreePlanBanner.tsx`. These identifiers are public.
+`public/app-ads.txt` authorizes publisher `pub-9535995743311423`; deploy the website
+to publish it at `https://familyloanledger.com/app-ads.txt`.
+
+Development and EAS preview builds use Google test ads. Only the EAS production
+profile sets `EXPO_PUBLIC_ADMOB_TEST_ADS=false` to use the live banner IDs. Builds
+without an explicit setting default to test ads. For production-mode testing,
+register the device in AdMob as a test device before requesting live units.
+
+The app gathers UMP consent before initializing the ad SDK, requests only
+non-personalized ads with G-rated inventory, disables publisher first-party IDs,
+and exposes Ad privacy choices wherever UMP requires it. Measurement is delayed
+until initialization; no account identifiers or financial records are supplied
+to ad requests. Ad or consent failures leave the ledger usable without banners.
+
+Before releasing ads:
+
+1. Deploy the updated API, privacy notice, and `app-ads.txt` website file.
+2. In AdMob Privacy & messaging, configure and publish the applicable European
+   and US state privacy messages for both apps using the privacy notice URL.
+   If configuring an iOS IDFA/ATT message, the plugin already supplies its usage
+   description; do not make ledger access depend on allowing tracking.
+3. Set the store developer website to `https://familyloanledger.com`, link each
+   public store listing in AdMob, and complete verification/readiness review.
+4. Update App Store privacy disclosures and Google Play Data safety / Contains
+   ads declarations to match the Google Mobile Ads SDK and actual configuration.
+5. Build and test a preview on physical devices. Check free admin, paid admin,
+   grandfathered admin, child, sign-out, consent acceptance/rejection/reopening,
+   and network failure. Ads require a native development/EAS build; Expo Go
+   cannot display them.
+6. Build and submit new iOS and Android production releases. Updating only the
+   website or pushing JavaScript to an old binary cannot install the native SDK.
+
+Run the server ad-entitlement checks with
+`pnpm exec tsx --test lib/mobile-ads.test.ts` and mobile types with
+`pnpm --filter @familyloanledger/mobile typecheck`. Native rendering, consent,
+and store approval must also be checked on device.
+
 ## Local setup
 
 Prerequisites: Node.js 20.9 or newer and pnpm 10.34. The project pins the pnpm

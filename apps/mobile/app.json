@@ -7,6 +7,17 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "familyloanledger",
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-9535995743311423~7278206168",
+          "iosAppId": "ca-app-pub-9535995743311423~8323694520",
+          "delayAppMeasurementInit": true,
+          "userTrackingUsageDescription": "Your permission helps support the free version through advertising. You can continue using the app without allowing tracking."
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.familyloanledger.app"

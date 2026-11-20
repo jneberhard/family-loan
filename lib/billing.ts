@@ -74,6 +74,13 @@ export function getFamilyLimits(family: Pick<Family, "plan" | "billingStatus" | 
   return { maxChildAccounts: 1, maxParentAdmins: 1 };
 }
 
+export function shouldShowMobileAds(
+  role: string,
+  family: Pick<Family, "plan" | "billingStatus" | "subscriptionPeriodEnd"> | null,
+) {
+  return role === "ADMIN" && family !== null && !hasPaidAccess(family);
+}
+
 export function stripeBillingStatus(status: Stripe.Subscription.Status): BillingStatus {
   if (status === "active" || status === "trialing") return "ACTIVE";
   if (status === "past_due" || status === "unpaid") return "PAST_DUE";

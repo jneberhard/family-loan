@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import { FreePlanBanner } from "./components/FreePlanBanner";
 
 const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "https://familyloanledger.com").replace(/\/$/, "");
 const TOKEN_KEY = "kinledger.session";
@@ -45,6 +46,7 @@ type Entry = {
 type HomeData = {
   viewer: { name: string; role: "ADMIN" | "CHILD" };
   family: { name: string; interestPostingDay: number };
+  advertising?: { showBanner: boolean };
   accounts: { id: string; name: string; annualRate: number; balance: number; entries: Entry[] }[];
 };
 type NewEntryType = "LOAN" | "PAYMENT" | "ADJUSTMENT";
@@ -402,6 +404,7 @@ export default function App() {
             <Text style={styles.footer}>Copyright 2026 JR Studios, LLC</Text>
           </ScrollView>
         ) : token && data && !mustChangePassword ? (
+          <>
           <ScrollView
             contentContainerStyle={styles.content}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={GREEN} />}
@@ -487,6 +490,8 @@ export default function App() {
             <Text style={styles.footer}>Pull down to refresh your ledger.</Text>
             <Text style={styles.footer}>Copyright 2026 JR Studios, LLC</Text>
           </ScrollView>
+          {data.viewer.role === "ADMIN" && data.advertising?.showBanner === true && <FreePlanBanner key={token} />}
+          </>
         ) : mustChangePassword ? (
           <ScrollView contentContainerStyle={styles.authContent} keyboardShouldPersistTaps="handled">
             <Text style={styles.brand}>Family Loan Ledger</Text>

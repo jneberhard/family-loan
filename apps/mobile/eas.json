@@ -6,12 +6,14 @@
   "build": {
     "preview": {
       "distribution": "internal",
+      "env": { "EXPO_PUBLIC_ADMOB_TEST_ADS": "true" },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
       "autoIncrement": true,
+      "env": { "EXPO_PUBLIC_ADMOB_TEST_ADS": "false" },
       "android": {
         "buildType": "app-bundle"
       }

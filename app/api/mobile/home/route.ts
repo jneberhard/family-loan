@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateRunningLedger, type LedgerItem } from "@/lib/finance";
 import { requireSession } from "@/lib/session";
-import { getFamilyLimits } from "@/lib/billing";
+import { getFamilyLimits, shouldShowMobileAds } from "@/lib/billing";
 
 export async function GET() {
   try {
@@ -36,6 +36,7 @@ export async function GET() {
       {
         viewer: { name: session.name, role: session.role },
         family: { name: family?.name ?? "Family workspace", interestPostingDay: family?.interestPostingDay ?? 1 },
+        advertising: { showBanner: shouldShowMobileAds(session.role, family) },
         accounts: accounts.map((account) => {
           const entries: LedgerItem[] = account.transactions.map((entry) => ({
             id: entry.id,

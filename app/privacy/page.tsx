@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         </div>
         <span className="privacy-icon"><ShieldCheck size={22} /></span>
         <h1>Privacy notice</h1>
-        <p className="privacy-updated">Last updated November 18, 2026</p>
+        <p className="privacy-updated">Last updated November 20, 2026</p>
         <p>Family Loan Ledger is operated by JR Studios, LLC.</p>
 
         <section>
@@ -31,7 +31,13 @@ export default function PrivacyPage() {
         </section>
         <section>
           <h2>Service providers</h2>
-          <p>Application hosting is provided by Vercel and database hosting by Neon. Resend processes contact-form messages and account deletion request notices after email delivery is configured. Deletion notice emails contain a request reference rather than the requester's name or email. These providers process information only as needed to deliver their services.</p>
+          <p>Application hosting is provided by Vercel and database hosting by Neon. Resend processes contact-form messages and account deletion request notices after email delivery is configured. Deletion notice emails contain a request reference rather than the requester&apos;s name or email. These providers process information only as needed to deliver their services.</p>
+        </section>
+        <section>
+          <h2>Advertising in the mobile app</h2>
+          <p>The free mobile app supports banner advertising through Google AdMob on parent administrator dashboards. Child accounts and families with paid or grandfathered access do not display ads. We do not send account names, email addresses, loan balances, or ledger entries to AdMob.</p>
+          <p>When advertising is enabled, Google may process device identifiers, IP addresses, ad interactions, and diagnostic information to deliver ads, measure performance, and prevent fraud. We request non-personalized ads, disable publisher first-party identifiers, and delay ad measurement until the consent flow permits ad requests. Non-personalized ads can still use device storage and process personal data.</p>
+          <p>Where required, a consent message appears before ads are requested. You can revisit available choices using the app&apos;s Ad privacy choices control. Declining consent or tracking permission does not prevent access to your family ledger. See <a href="https://policies.google.com/technologies/ads">Google&apos;s advertising information</a> and <a href="https://policies.google.com/privacy">Google&apos;s privacy policy</a> for details.</p>
         </section>
         <section>
           <h2>Access and sharing</h2>
@@ -39,7 +45,7 @@ export default function PrivacyPage() {
         </section>
         <section>
           <h2>Retention and requests</h2>
-          <p>Account information can be deleted from the mobile app after password confirmation, or requested through the <Link href="/delete-account">account deletion page</Link>. When a user account is deleted, sign-in access and identifying account details are removed. Shared family loan entries remain with the family in anonymized form. If the user is the family's only administrator, deletion waits until family access can be transferred. Records may also be retained as reasonably necessary for security, dispute resolution, legal obligations, and backups.</p>
+          <p>Account information can be deleted from the mobile app after password confirmation, or requested through the <Link href="/delete-account">account deletion page</Link>. When a user account is deleted, sign-in access and identifying account details are removed. Shared family loan entries remain with the family in anonymized form. If the user is the family&apos;s only administrator, deletion waits until family access can be transferred. Records may also be retained as reasonably necessary for security, dispute resolution, legal obligations, and backups.</p>
         </section>
         <section>
           <h2>Security</h2>
