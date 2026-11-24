@@ -1,13 +1,11 @@
+import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { hasPaidAccess } from "@/lib/billing";
 import { PricingPlans } from "@/components/pricing-plans";
 
-export const metadata = {
-  title: "Plans and pricing",
-  description: "Choose a free family loan ledger or full family access with a monthly or yearly subscription.",
-};
+export const metadata = publicPageMetadata("/pricing", "Plans and pricing", "Choose a free family loan ledger or full family access with a monthly or yearly subscription.");
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +28,8 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
   }
 
   return (
-    <main className="pricing-page">
-      <nav className="landing-nav container">
+    <main id="main-content" tabIndex={-1} className="pricing-page">
+      <nav className="landing-nav container" aria-label="Main navigation">
         <Link href="/" className="brand"><span>Family Loan Ledger</span></Link>
         <div className="landing-nav-actions">
           <Link href="/" className="button button-ghost">Home</Link>

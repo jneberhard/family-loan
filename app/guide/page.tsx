@@ -1,3 +1,4 @@
+import { publicPageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -16,10 +17,7 @@ import {
 } from "lucide-react";
 import { getSession } from "@/lib/session";
 
-export const metadata = {
-  title: "User Guide",
-  description: "Learn how to set up and manage a family loan in Family Loan Ledger.",
-};
+export const metadata = publicPageMetadata("/guide", "User Guide", "Learn how to set up and manage a family loan in Family Loan Ledger.");
 
 const guideSections = [
   ["getting-started", "Getting started"],
@@ -49,7 +47,7 @@ export default async function GuidePage() {
           <Image src="/family-loan-ledger-logo.png" alt="" width={44} height={44} priority />
           <span>Family Loan Ledger</span>
         </Link>
-        <Link href={returnHref} className="guide-home-link">
+        <Link href={returnHref} className="guide-home-link" aria-label={session ? "Back to dashboard" : "Back home"}>
           <ArrowLeft size={16} /> {session ? "Back to dashboard" : "Back home"}
         </Link>
       </nav>
@@ -68,7 +66,7 @@ export default async function GuidePage() {
           </div>
         </aside>
 
-        <article className="guide-content">
+        <article id="main-content" tabIndex={-1} className="guide-content">
           <header className="guide-hero">
             <span className="guide-icon"><BookOpen size={24} /></span>
             <p className="section-kicker">Family Loan Ledger user guide</p>

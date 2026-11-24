@@ -1,12 +1,10 @@
+import { publicPageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, Scale, ShieldCheck } from "lucide-react";
 import { getSession } from "@/lib/session";
 
-export const metadata = {
-  title: "Legal & Loan Disclaimer",
-  description: "Important limitations and responsibilities for families using Family Loan Ledger.",
-};
+export const metadata = publicPageMetadata("/legal", "Legal & Loan Disclaimer", "Important limitations and responsibilities for families using Family Loan Ledger.");
 
 export default async function LegalPage() {
   const session = await getSession();
@@ -19,7 +17,7 @@ export default async function LegalPage() {
     : "/";
 
   return (
-    <main className="privacy-page legal-page">
+    <main id="main-content" tabIndex={-1} className="privacy-page legal-page">
       <article className="privacy-card legal-card">
         <Link href={returnHref} className="back-link">
           <ArrowLeft size={17} /> {session ? "Back to dashboard" : "Back home"}

@@ -62,7 +62,7 @@ export function PricingPlans({
   const signupHref = (selectedPlan: Plan) => `/become-parent?plan=${selectedPlan}`;
 
   return (
-    <section className="pricing-content container">
+    <section id="main-content" tabIndex={-1} className="pricing-content container">
       <span className="section-kicker"><Sparkles size={15} /> Family plans</span>
       <h1>One family. One simple plan.</h1>
       <p className="pricing-intro">Start free with one parent and one child, or subscribe once to give your whole family access.</p>

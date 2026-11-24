@@ -123,20 +123,20 @@ export function SuperAdminDashboard({
 
   return (
     <main className="super-shell">
-      {toast && <div className="toast"><Check size={17} /> {toast}</div>}
+      <div className={toast ? "toast" : "sr-only"} role="status" aria-atomic="true">{toast && <><Check size={17} /> {toast}</>}</div>
       <header className="super-header">
         <Link href="/" className="brand">
           <Image src="/family-loan-ledger-logo.png" alt="" width={44} height={44} priority />
           <span>Family Loan Ledger</span>
         </Link>
         <span className="super-badge"><ShieldCheck size={15} /> Super user console</span>
-        <Link href="#coupon-management" className="button button-soft super-coupon-link"><Ticket size={15} /> Coupon codes</Link>
+        <Link href="#coupon-management" className="button button-soft super-coupon-link" aria-label="Coupon codes"><Ticket size={15} /> Coupon codes</Link>
         <form action="/api/auth/logout" method="post">
-          <button className="button button-soft"><LogOut size={16} /> Sign out</button>
+          <button className="button button-soft" aria-label="Sign out"><LogOut size={16} /> Sign out</button>
         </form>
       </header>
 
-      <section className="super-content">
+      <section id="main-content" tabIndex={-1} className="super-content">
         <div className="super-heading">
           <div>
             <span className="section-kicker">Platform administration</span>
@@ -151,16 +151,16 @@ export function SuperAdminDashboard({
         </div>
 
         <div className="approval-toolbar">
-          <div className="approval-tabs">
+          <div className="approval-tabs" role="group" aria-label="Application status filter">
             {(["PENDING", "APPROVED", "REJECTED", "ALL"] as const).map((status) => (
-              <button key={status} className={filter === status ? "active" : ""} onClick={() => setFilter(status)}>
+              <button aria-pressed={filter === status} key={status} className={filter === status ? "active" : ""} onClick={() => setFilter(status)}>
                 {status === "ALL" ? "All applications" : status.toLowerCase()}
               </button>
             ))}
           </div>
           <label className="approval-search">
             <Search size={17} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search families or parents" />
+            <input aria-label="Search families or parents" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search families or parents" />
           </label>
         </div>
 

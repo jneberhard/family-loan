@@ -24,7 +24,6 @@ export function CouponManager() {
   const [duration, setDuration] = useState("once");
 
   async function loadCodes() {
-    setLoading(true);
     try {
       const response = await fetch("/api/super-admin/coupons");
       const result = await response.json();
@@ -37,7 +36,20 @@ export function CouponManager() {
     }
   }
 
-  useEffect(() => { void loadCodes(); }, []);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/super-admin/coupons")
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Unable to load coupon codes.");
+        if (active) setCodes(result.codes ?? []);
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(reason instanceof Error ? reason.message : "Unable to load coupon codes.");
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   async function createCode(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -64,6 +76,7 @@ export function CouponManager() {
       form.reset();
       setDuration("once");
       setNotice(`${result.code} is ready to use at subscription checkout.`);
+      setLoading(true);
       await loadCodes();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to create that coupon code.");

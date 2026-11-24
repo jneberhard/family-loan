@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useModalFocus } from "@/components/use-modal-focus";
 
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
 const WARNING_BEFORE_MS = 60 * 1000;
@@ -8,7 +9,7 @@ const LAST_ACTIVITY_KEY = "family-loan-last-activity";
 
 export function InactivityTimeout({ children }: { children: React.ReactNode }) {
   const [remainingMs, setRemainingMs] = useState(IDLE_TIMEOUT_MS);
-  const [signingOut, setSigningOut] = useState(false);
+  const signingOut = remainingMs === 0;
 
   const recordActivity = useCallback(() => {
     const now = Date.now();
@@ -17,7 +18,7 @@ export function InactivityTimeout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!localStorage.getItem(LAST_ACTIVITY_KEY)) recordActivity();
+    if (!localStorage.getItem(LAST_ACTIVITY_KEY)) localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
 
     const tick = () => {
       const lastActivity = Number(localStorage.getItem(LAST_ACTIVITY_KEY)) || Date.now();
@@ -27,17 +28,17 @@ export function InactivityTimeout({ children }: { children: React.ReactNode }) {
     activityEvents.forEach((event) => window.addEventListener(event, recordActivity, { passive: true }));
     window.addEventListener("storage", tick);
     const interval = window.setInterval(tick, 1000);
-    tick();
+    const initialTick = window.requestAnimationFrame(tick);
     return () => {
       activityEvents.forEach((event) => window.removeEventListener(event, recordActivity));
       window.removeEventListener("storage", tick);
       window.clearInterval(interval);
+      window.cancelAnimationFrame(initialTick);
     };
   }, [recordActivity]);
 
   useEffect(() => {
     if (remainingMs > 0) return;
-    setSigningOut(true);
     localStorage.removeItem(LAST_ACTIVITY_KEY);
     fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" })
       .catch(() => undefined)
@@ -46,13 +47,15 @@ export function InactivityTimeout({ children }: { children: React.ReactNode }) {
 
   const warningOpen = remainingMs <= WARNING_BEFORE_MS && remainingMs > 0;
   const secondsLeft = Math.ceil(remainingMs / 1000);
+  const warningRef = useRef<HTMLElement>(null);
+  useModalFocus(warningRef, warningOpen, recordActivity);
 
   return (
     <>
       {children}
       {warningOpen && (
-        <div role="alertdialog" aria-modal="true" aria-labelledby="idle-title" aria-describedby="idle-description" style={overlayStyle}>
-          <section style={dialogStyle}>
+        <div style={overlayStyle}>
+          <section ref={warningRef} role="alertdialog" aria-modal="true" aria-labelledby="idle-title" aria-describedby="idle-description" tabIndex={-1} style={dialogStyle}>
             <h2 id="idle-title" style={{ margin: "0 0 10px", color: "#173c2a", fontSize: 22 }}>Still there?</h2>
             <p id="idle-description" style={{ margin: "0 0 20px", color: "#53645a", lineHeight: 1.55 }}>
               You’ll be signed out in {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")} due to inactivity.

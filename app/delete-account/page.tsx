@@ -1,16 +1,14 @@
+import { publicPageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { AccountDeletionForm } from "@/components/account-deletion-form";
 
-export const metadata = {
-  title: "Request account deletion",
-  description: "Request deletion of your Family Loan Ledger account and personal information.",
-};
+export const metadata = publicPageMetadata("/delete-account", "Request account deletion", "Request deletion of your Family Loan Ledger account and personal information.");
 
 export default function DeleteAccountPage() {
   return (
-    <main className="privacy-page">
+    <main id="main-content" tabIndex={-1} className="privacy-page">
       <article className="privacy-card">
         <Link href="/" className="back-link"><ArrowLeft size={17} /> Back home</Link>
         <div className="brand privacy-brand">

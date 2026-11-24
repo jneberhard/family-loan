@@ -1,15 +1,13 @@
+import { publicPageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
-export const metadata = {
-  title: "Privacy",
-  description: "How Family Loan Ledger handles family account and loan information.",
-};
+export const metadata = publicPageMetadata("/privacy", "Privacy", "How Family Loan Ledger handles family account and loan information.");
 
 export default function PrivacyPage() {
   return (
-    <main className="privacy-page">
+    <main id="main-content" tabIndex={-1} className="privacy-page">
       <article className="privacy-card">
         <Link href="/" className="back-link"><ArrowLeft size={17} /> Back home</Link>
         <div className="brand privacy-brand">

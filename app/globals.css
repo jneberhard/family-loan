@@ -7,7 +7,7 @@
   --gold: #d4af37;
   --silver: #d9dde3;
   --charcoal: #2d3748;
-  --slate: #6b7280;
+  --slate: #59636e;
   --border: #e5e7eb;
   --shadow: 0 18px 50px rgba(36, 62, 44, 0.09);
 }
@@ -252,7 +252,7 @@ a { color: inherit; text-decoration: none; }
 .back-link { color: #d2dad4; display: inline-flex; align-items: center; gap: 7px; font-size: 12px; }
 .login-story-inner { max-width: 470px; margin: 15vh auto 0; position: relative; z-index: 1; }
 .login-story-inner img { border-radius: 25px; margin-bottom: 28px; }
-.login-story h1 { font-family: var(--font-serif), Georgia, serif; font-size: 47px; line-height: 1.1; font-weight: 500; letter-spacing: -.03em; margin: 16px 0 32px; }
+.login-story-heading { font-family: var(--font-serif), Georgia, serif; font-size: 47px; line-height: 1.1; font-weight: 500; letter-spacing: -.03em; margin: 16px 0 32px; }
 .login-story ul { padding: 0; list-style: none; display: grid; gap: 14px; color: #d4ddd6; font-size: 13px; }
 .login-story li { display: flex; gap: 10px; align-items: center; }
 .login-story li svg { width: 18px; color: var(--sage); }
@@ -260,7 +260,7 @@ a { color: inherit; text-decoration: none; }
 .login-card { width: min(430px, 100%); background: white; border: 1px solid var(--border); border-radius: 24px; padding: 42px; box-shadow: var(--shadow); }
 .login-brand { margin-bottom: 42px; }
 .login-icon { width: 45px; height: 45px; display: grid; place-items: center; background: #edf6ee; color: var(--green); border-radius: 13px; }
-.login-card h2 { font-family: var(--font-serif), Georgia, serif; font-size: 35px; margin: 20px 0 5px; }
+.login-card h1 { font-family: var(--font-serif), Georgia, serif; font-size: 35px; margin: 20px 0 5px; }
 .login-card > p { color: var(--slate); margin: 0 0 28px; font-size: 13px; }
 .login-form { display: grid; gap: 17px; }
 .mfa-qr-code { justify-self: start; background: #fff; border: 1px solid #e5e9e5; border-radius: 12px; padding: 12px; }
@@ -348,7 +348,7 @@ a { color: inherit; text-decoration: none; }
 .approval-identity h2 { grid-column: 2; grid-row: 1; font-size: 13px; margin: 0; }
 .approval-identity p { grid-column: 1 / 3; color: var(--slate); font-size: 9px; margin: 2px 0 0; }
 .status-pill { grid-column: 1; grid-row: 1; padding: 4px 7px; border-radius: 999px; font-size: 7px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
-.status-pill.pending { background: #fbf5e4; color: #987716; }
+.status-pill.pending { background: #fbf5e4; color: #7d6011; }
 .status-pill.approved { background: #eaf5eb; color: var(--green); }
 .status-pill.rejected { background: #fff0ef; color: #a53b32; }
 .approval-meta { display: grid; gap: 7px; color: var(--slate); font-size: 9px; }
@@ -422,7 +422,7 @@ a { color: inherit; text-decoration: none; }
 .coupon-usage small { display: flex; align-items: center; gap: 4px; }
 .coupon-status { padding: 5px 8px; border-radius: 999px; font-size: 8px; font-weight: 850; }
 .coupon-status.active { color: var(--green); background: #edf6ee; }
-.coupon-status.inactive { color: #7b827d; background: #f0f2f1; }
+.coupon-status.inactive { color: #59635c; background: #f0f2f1; }
 .coupon-copy, .coupon-disable { width: 31px; height: 31px; }
 .coupon-disable { color: #a53b32; }
 .coupon-empty { padding: 18px; border-radius: 10px; background: #f7f9f8; color: var(--slate); text-align: center; font-size: 11px; }
@@ -440,7 +440,7 @@ a { color: inherit; text-decoration: none; }
 .role-toggle { display: grid; grid-template-columns: 1fr 1fr; background: #e4ece6; border-radius: 9px; padding: 3px; }
 .role-toggle button { border: 0; background: transparent; border-radius: 7px; font-size: 10px; padding: 7px; cursor: pointer; font-weight: 800; color: var(--slate); }
 .role-toggle button.active { color: var(--green); background: white; box-shadow: 0 2px 8px rgba(34,70,43,.08); }
-.side-label { color: #9aa19c; text-transform: uppercase; letter-spacing: .1em; font-size: 8px; font-weight: 850; padding: 0 9px; }
+.side-label { color: #626d66; text-transform: uppercase; letter-spacing: .1em; font-size: 8px; font-weight: 850; padding: 0 9px; }
 .side-nav { display: grid; gap: 3px; }
 .side-nav .side-label { margin-bottom: 6px; }
 .side-nav .side-label-help { margin-top: 11px; }
@@ -562,7 +562,7 @@ a { color: inherit; text-decoration: none; }
 .ledger-view-toggle button.active { color: var(--green); background: white; box-shadow: 0 2px 8px rgba(34,70,43,.08); }
 .ledger-table-wrap { overflow-x: auto; }
 .ledger-table { width: 100%; border-collapse: collapse; min-width: 650px; }
-.ledger-table th { color: #89918c; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; font-weight: 850; text-align: left; padding: 11px 14px; background: #fafbfa; }
+.ledger-table th { color: #626d66; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; font-weight: 850; text-align: left; padding: 11px 14px; background: #fafbfa; }
 .ledger-table td { padding: 13px 14px; border-top: 1px solid #eff1ef; font-size: 11px; white-space: nowrap; }
 /* Pale direction colors preserve contrast while making balance movement scannable. */
 .ledger-table tr.ledger-entry-payment td { background: #eaf5ff; border-top-color: #d6eafb; }
@@ -656,7 +656,7 @@ a { color: inherit; text-decoration: none; }
 .access-row { display: grid; grid-template-columns: 38px 1fr auto; gap: 11px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
 .access-row > i { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; font-size: 10px; font-style: normal; font-weight: 850; }
 .admin-access > i { background: #eaf4eb; color: var(--green); }
-.admin-access .access-row-controls > b { background: #f8f3df; color: #8c711c; }
+.admin-access .access-row-controls > b { background: #f8f3df; color: #796016; }
 .access-row > span { display: grid; gap: 3px; min-width: 0; }
 .access-row strong { font-size: 11px; }
 .access-row small { color: var(--slate); font-size: 9px; overflow: hidden; text-overflow: ellipsis; }
@@ -928,7 +928,7 @@ a { color: inherit; text-decoration: none; }
 .guide-section > p { color: var(--slate); line-height: 1.75; font-size: 14px; }
 .guide-section-heading { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 22px; color: var(--green); }
 .guide-section-heading > svg { margin-top: 5px; }
-.guide-section-heading span { display: block; margin-bottom: 3px; color: var(--sage); font-size: 10px; font-weight: 850; letter-spacing: .14em; }
+.guide-section-heading span { display: block; margin-bottom: 3px; color: var(--green); font-size: 10px; font-weight: 850; letter-spacing: .14em; }
 .guide-section-heading h2 { margin: 0; color: var(--charcoal); font-family: var(--font-serif), Georgia, serif; font-size: 31px; font-weight: 560; letter-spacing: -.02em; }
 .guide-steps { display: grid; gap: 18px; margin-top: 26px; }
 .guide-steps > div { display: grid; grid-template-columns: 32px 1fr; gap: 13px; align-items: start; }
@@ -1064,4 +1064,24 @@ a { color: inherit; text-decoration: none; }
   .coupon-management { padding: 19px 15px; }
   .coupon-form { grid-template-columns: 1fr; }
   .coupon-list-heading { align-items: start; flex-direction: column; gap: 4px; }
+}
+
+/* Keyboard access, legible controls, and user motion preferences across pages. */
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 2000; padding: 12px 18px; border-radius: 8px; background: #fff; color: #173c2a; font-weight: 800; transform: translateY(-180%); }
+.skip-link:focus { transform: translateY(0); }
+body :is(a, button, input, select, textarea, [tabindex]):focus-visible { outline: 3px solid #174c9c; outline-offset: 3px; }
+:where(input, select, textarea) { border-color: #7c8980; }
+:where(input, textarea)::placeholder { color: #626d66; opacity: 1; }
+.button, .icon-button, .password-visibility { min-width: 24px; min-height: 24px; }
+.side-label-row button, .side-label-row a, .metric-edit, .panel-footer button { min-width: 24px; min-height: 24px; }
+.ledger-table-wrap:focus-visible { outline-offset: -3px; }
+#main-content, .ledger-panel { scroll-margin-top: 90px; }
+.login-form input, .login-form select, .modal-form input, .modal-form select, .contact-form input, .contact-form select, .contact-form textarea { border-color: #7c8980; }
+.plan-choice { border-color: #7c8980; }
+@media (max-width: 800px) {
+  .sidebar:not(.open) { visibility: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

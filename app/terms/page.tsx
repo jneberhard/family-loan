@@ -1,15 +1,13 @@
+import { publicPageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
 
-export const metadata = {
-  title: "Terms of Service",
-  description: "Terms for using the Family Loan Ledger website and mobile apps.",
-};
+export const metadata = publicPageMetadata("/terms", "Terms of Service", "Terms for using the Family Loan Ledger website and mobile apps.");
 
 export default function TermsPage() {
   return (
-    <main className="privacy-page legal-page">
+    <main id="main-content" tabIndex={-1} className="privacy-page legal-page">
       <article className="privacy-card legal-card">
         <Link href="/" className="back-link"><ArrowLeft size={17} /> Back home</Link>
         <div className="brand privacy-brand">

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   ArrowDownLeft,
   ArrowLeft,
@@ -41,7 +41,19 @@ import {
 import { demoChildren, type DemoChild } from "@/lib/demo-data";
 import { calculateAprInterest, calculateRunningLedger, type LedgerItem } from "@/lib/finance";
 import { PasswordInput } from "@/components/password-input";
+import { useModalFocus } from "@/components/use-modal-focus";
 import { ContactModal } from "@/components/contact-form";
+
+const mobileQuery = "(max-width: 800px)";
+function subscribeToViewport(callback: () => void) {
+  const query = window.matchMedia(mobileQuery);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+
+function preferredScrollBehavior(): ScrollBehavior {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -165,6 +177,9 @@ export function DemoDashboard({
   const [modal, setModal] = useState<Modal>(null);
   const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
+  const isMobile = useSyncExternalStore(subscribeToViewport, () => window.matchMedia(mobileQuery).matches, () => false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  useModalFocus(sidebarRef, isMobile && mobileNav, () => setMobileNav(false));
   const [editingEntry, setEditingEntry] = useState<LedgerItem | null>(null);
   const [editingChild, setEditingChild] = useState<DemoChild | null>(null);
   const [editingAdmin, setEditingAdmin] = useState<FamilyAdmin | null>(null);
@@ -773,15 +788,17 @@ export function DemoDashboard({
 
   return (
     <main className={`app-shell ${demoMode ? "" : "has-app-footer"}`}>
-      {toast && <div className="toast"><Check size={17} /> {toast}</div>}
+      <div className={toast ? "toast" : "sr-only"} role="status" aria-atomic="true">{toast && <><Check size={17} /> {toast}</>}</div>
       <button
         type="button"
         className={`sidebar-scrim ${mobileNav ? "visible" : ""}`}
+        data-modal-backdrop
+        aria-hidden="true"
         onClick={() => setMobileNav(false)}
         aria-label="Close navigation"
-        tabIndex={mobileNav ? 0 : -1}
+        tabIndex={-1}
       />
-      <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
+      <div ref={sidebarRef} id="workspace-navigation" className={`sidebar ${mobileNav ? "open" : ""}`} inert={isMobile && !mobileNav} role={isMobile && mobileNav ? "dialog" : "complementary"} aria-modal={isMobile && mobileNav ? true : undefined} aria-label="Workspace navigation" tabIndex={-1}>
         <div className="sidebar-top">
           <Link href="/" className="brand app-brand">
             <Image src="/family-loan-ledger-logo.png" alt="" width={45} height={45} priority />
@@ -792,17 +809,17 @@ export function DemoDashboard({
 
         {demoMode && <div className="demo-role-card">
           <span><Sparkles size={14} /> Demo workspace</span>
-          <div className="role-toggle">
-            <button className={role === "parent" ? "active" : ""} onClick={() => switchRole("parent")}>Parent</button>
-            <button className={role === "child" ? "active" : ""} onClick={() => switchRole("child")}>Child</button>
+          <div className="role-toggle" role="group" aria-label="Demo account role">
+            <button aria-pressed={role === "parent"} className={role === "parent" ? "active" : ""} onClick={() => switchRole("parent")}>Parent</button>
+            <button aria-pressed={role === "child"} className={role === "child" ? "active" : ""} onClick={() => switchRole("child")}>Child</button>
           </div>
         </div>}
 
-        <nav className="side-nav">
+        <nav className="side-nav" aria-label="Workspace">
           <span className="side-label">Workspace</span>
-          <button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setMobileNav(false); }}><LayoutDashboard size={19} /> Overview</button>
+          <button className="active" onClick={() => { window.scrollTo({ top: 0, behavior: preferredScrollBehavior() }); setMobileNav(false); }}><LayoutDashboard size={19} /> Overview</button>
           <Link href="/" onClick={() => setMobileNav(false)}><House size={19} /> Home page</Link>
-          <button onClick={() => { document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" }); setMobileNav(false); }}><ReceiptText size={19} /> All transactions</button>
+          <button onClick={() => { document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: preferredScrollBehavior() }); setMobileNav(false); }}><ReceiptText size={19} /> All transactions</button>
           {role === "parent" && <button onClick={() => { setModal("access"); setMobileNav(false); }}><Users size={19} /> Family access</button>}
           {role === "parent" && <button onClick={() => { setModal("settings"); setMobileNav(false); }}><Settings size={19} /> Settings</button>}
           {!demoMode && role === "parent" && <Link href="/pricing" onClick={() => setMobileNav(false)}><WalletCards size={19} /> Plans &amp; billing</Link>}
@@ -849,10 +866,11 @@ export function DemoDashboard({
             return (
               <button
                 key={child.id}
+                aria-pressed={selected.id === child.id}
                 className={`child-nav-item ${selected.id === child.id ? "selected" : ""}`}
                 onClick={() => { setSelectedId(child.id); setMobileNav(false); }}
               >
-                <i style={{ background: `${child.accent}22`, color: child.accent }}>{child.initials}</i>
+                <i style={{ background: `${child.accent}22`, color: "var(--green-dark)" }}>{child.initials}</i>
                 <span>{child.name.split(" ")[0]}<small>{money.format(balance)}</small></span>
                 {role === "child" && <LockKeyhole size={13} />}
               </button>
@@ -873,11 +891,11 @@ export function DemoDashboard({
             </form>
           )}
         </div>
-      </aside>
+      </div>
 
       <section className="app-main">
         <header className="app-header">
-          <button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu /></button>
+          <button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open navigation" aria-expanded={mobileNav} aria-controls="workspace-navigation"><Menu /></button>
           <div>
             <span className="breadcrumb">{workspaceName} <b>/</b> {selected.name.split(" ")[0]}&apos;s loan</span>
             <h1>
@@ -888,15 +906,15 @@ export function DemoDashboard({
           </div>
           <div className="header-actions">
             {demoMode && (
-              <Link href="/" className="button button-soft"><ArrowLeft size={17} /> Back to home</Link>
+              <Link href="/" className="button button-soft" aria-label="Back to home"><ArrowLeft size={17} /> Back to home</Link>
             )}
-            <button className="icon-button"><Search size={20} /></button>
-            <button className="icon-button notification"><Bell size={20} /><i /></button>
+            <button className="icon-button" aria-label="Go to account ledger" onClick={() => { document.querySelector(".ledger-panel")?.scrollIntoView(); document.querySelector<HTMLElement>(".ledger-panel")?.focus(); }}><Search size={20} /></button>
+            <button className="icon-button notification" aria-label="Notifications unavailable" disabled><Bell size={20} /><i /></button>
             {demoMode && role === "parent" && (
-              <button className="button button-gold" onClick={() => setModal("child")}><UserPlus size={17} /> Add child</button>
+              <button className="button button-gold" aria-label="Add child" onClick={() => setModal("child")}><UserPlus size={17} /> Add child</button>
             )}
             {role === "parent" && children.length > 0 && (
-              <button className="button button-primary" onClick={openAddEntry}><Plus size={17} /> Add entry</button>
+              <button className="button button-primary" aria-label="Add entry" onClick={openAddEntry}><Plus size={17} /> Add entry</button>
             )}
           </div>
         </header>
@@ -922,7 +940,7 @@ export function DemoDashboard({
           </div>
         )}
 
-        <section className="dashboard-content">
+        <section id="main-content" tabIndex={-1} className="dashboard-content">
           {role === "parent" && children.length === 0 ? (
             <div className="empty-workspace">
               <span><Users size={30} /></span>
@@ -993,7 +1011,7 @@ export function DemoDashboard({
           </div>
 
           <div className="dashboard-grid">
-            <article className={`panel ledger-panel ledger-view-${ledgerView}`}>
+            <article className={`panel ledger-panel ledger-view-${ledgerView}`} tabIndex={-1} aria-label="Account ledger">
               <div className="panel-header">
                 <div><h3>Account ledger</h3><p>Every transaction and interest posting</p></div>
                 <div className="ledger-header-actions">
@@ -1015,13 +1033,14 @@ export function DemoDashboard({
                       Ledger
                     </button>
                   </div>
-                  <button className="icon-button" aria-label="More ledger options"><MoreHorizontal /></button>
+                  <button className="icon-button" aria-label="Download account ledger" onClick={exportLedger}><MoreHorizontal /></button>
                 </div>
               </div>
               {/* Desktop rows use the same payment/loan colors as mobile cards. */}
-              <div className="ledger-table-wrap">
+              <div className="ledger-table-wrap" role="region" aria-label="Account ledger table" tabIndex={0}>
                 <table className="ledger-table">
-                  <thead><tr><th>Date</th><th>Details</th><th>Rate</th><th>Amount</th><th>Balance</th>{role === "parent" && <th><span className="sr-only">Actions</span></th>}</tr></thead>
+                  <caption className="sr-only">Transactions for {selected.name}, with amounts and running balances</caption>
+                  <thead><tr><th scope="col">Date</th><th scope="col">Details</th><th scope="col">Rate</th><th scope="col">Amount</th><th scope="col">Balance</th>{role === "parent" && <th scope="col"><span className="sr-only">Actions</span></th>}</tr></thead>
                   <tbody>
                     {[...selectedLedger].reverse().map((entry) => (
                       <tr className={ledgerEntryClass(entry.type)} key={entry.id}>
@@ -1141,13 +1160,13 @@ export function DemoDashboard({
               <Link href="/"><House size={20} /><span>Home</span></Link>
               <button type="button" onClick={() => setMobileNav(true)}><Users size={20} /><span>Children</span></button>
               <button type="button" className="primary" onClick={openAddEntry} disabled={!children.length}><Plus size={22} /><span>Add entry</span></button>
-              <button type="button" onClick={() => document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" })}><ReceiptText size={20} /><span>Activity</span></button>
+              <button type="button" onClick={() => document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: preferredScrollBehavior() })}><ReceiptText size={20} /><span>Activity</span></button>
               <button type="button" onClick={() => setMobileNav(true)}><UserPlus size={20} /><span>Account</span></button>
             </>
           ) : (
             <>
-              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}><WalletCards size={20} /><span>Balance</span></button>
-              <button type="button" onClick={() => document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: "smooth" })}><ReceiptText size={20} /><span>Activity</span></button>
+              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: preferredScrollBehavior() })}><WalletCards size={20} /><span>Balance</span></button>
+              <button type="button" onClick={() => document.querySelector(".ledger-panel")?.scrollIntoView({ behavior: preferredScrollBehavior() })}><ReceiptText size={20} /><span>Activity</span></button>
               <button type="button" onClick={exportLedger}><Download size={20} /><span>Statements</span></button>
               <button type="button" onClick={() => setMobileNav(true)}><UserPlus size={20} /><span>Account</span></button>
             </>
@@ -1276,7 +1295,7 @@ export function DemoDashboard({
             <div className="access-section-title child-access-title"><span>Child accounts ({children.length}{maxChildAccounts === null ? "" : ` / ${maxChildAccounts}`})</span></div>
             {children.map((child) => (
               <div className="access-row" key={child.id}>
-                <i style={{ background: `${child.accent}22`, color: child.accent }}>{child.initials}</i>
+                <i style={{ background: `${child.accent}22`, color: "var(--green-dark)" }}>{child.initials}</i>
                 <span><strong>{child.name}</strong><small>{child.email}</small></span>
                 <div className="access-row-controls">
                   <b><LockKeyhole size={13} /> Read only</b>
@@ -1382,10 +1401,14 @@ export function DemoDashboard({
 }
 
 function Modal({ title, subtitle, onClose, children }: { title: string; subtitle: string; onClose: () => void; children: React.ReactNode }) {
+  const modalRef = useRef<HTMLElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+  useModalFocus(modalRef, true, onClose);
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <div className="modal-header"><div><h2 id="modal-title">{title}</h2><p>{subtitle}</p></div><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></div>
+      <section ref={modalRef} className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} tabIndex={-1}>
+        <div className="modal-header"><div><h2 id={titleId}>{title}</h2><p id={descriptionId}>{subtitle}</p></div><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></div>
         {children}
       </section>
     </div>

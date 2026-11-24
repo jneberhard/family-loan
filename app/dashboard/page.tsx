@@ -1,3 +1,4 @@
+import { privatePageRobots } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import { DemoDashboard } from "@/components/demo-dashboard";
 import { InactivityTimeout } from "@/components/inactivity-timeout";
@@ -7,6 +8,8 @@ import type { DemoChild } from "@/lib/demo-data";
 import { getFamilyLimits, hasPaidAccess } from "@/lib/billing";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Family dashboard", robots: privatePageRobots };
 
 export default async function DashboardPage() {
   const session = await getSession();

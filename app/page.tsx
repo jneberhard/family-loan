@@ -1,3 +1,4 @@
+import { publicPageMetadata, siteUrl } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -13,6 +14,15 @@ import { ContactModal } from "@/components/contact-form";
 import { VideoNavLink } from "@/components/video-nav-link";
 import { getSession } from "@/lib/session";
 
+export const metadata = {
+  ...publicPageMetadata(
+    "/",
+    "Track family loans and payments",
+    "Track family loans, payments, balances, and automatic APR interest in a private ledger. Parents manage the records; children get read-only access. Start free.",
+  ),
+  title: { absolute: "Family Loan Ledger — Track family loans and payments" },
+};
+
 export default async function Home() {
   const session = await getSession();
   const accountHref = session?.mustChangePassword
@@ -23,7 +33,15 @@ export default async function Home() {
 
   return (
     <main className="landing-shell">
-      <nav className="landing-nav container">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "Family Loan Ledger",
+        url: siteUrl.toString(),
+        description: "Private family loan records with balances, payments, and automatic APR interest.",
+        inLanguage: "en-US",
+      }).replace(/</g, "\\u003c") }} />
+      <nav className="landing-nav container" aria-label="Main navigation">
         <Link href="/" className="brand">
           <Image src="/family-loan-ledger-logo.png" alt="" width={46} height={46} priority />
           <span>Family Loan Ledger</span>
@@ -44,7 +62,7 @@ export default async function Home() {
         </div>
       </nav>
 
-      <section className="hero container">
+      <section id="main-content" tabIndex={-1} className="hero container">
         <div className="hero-copy">
           <div className="eyebrow"><Sparkles size={15} /> Family finance, made thoughtful</div>
           <h1>Keep family loans clear.<br /><em>Keep family, family.</em></h1>

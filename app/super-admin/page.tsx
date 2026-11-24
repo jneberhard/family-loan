@@ -1,3 +1,4 @@
+import { privatePageRobots } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -5,7 +6,7 @@ import { SuperAdminDashboard } from "@/components/super-admin-dashboard";
 import { InactivityTimeout } from "@/components/inactivity-timeout";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Super user console" };
+export const metadata = { title: "Super user console", robots: privatePageRobots };
 
 export default async function SuperAdminPage() {
   const session = await getSession();

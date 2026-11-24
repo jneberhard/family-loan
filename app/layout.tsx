@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Newsreader } from "next/font/google";
 import "./globals.css";
+import { siteUrl } from "@/lib/seo";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-sans" });
 const newsreader = Newsreader({ subsets: ["latin"], variable: "--font-serif" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://familyloanledger.com"),
+  metadataBase: siteUrl,
   title: { default: "Family Loan Ledger — Family loans, clearly managed", template: "%s · Family Loan Ledger" },
   description:
     "A private, transparent family loan ledger for parents and their children.",
@@ -34,7 +35,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body className={`${manrope.variable} ${newsreader.variable}`}>{children}</body>
+      <body className={`${manrope.variable} ${newsreader.variable}`}><a className="skip-link" href="#main-content">Skip to main content</a>{children}</body>
     </html>
   );
 }

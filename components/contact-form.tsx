@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { useModalFocus } from "@/components/use-modal-focus";
 import { CheckCircle2, Send, X } from "lucide-react";
 
 function ContactForm({ defaultSubject = "General question" }: { defaultSubject?: string }) {
@@ -97,39 +98,7 @@ export function ContactModal({
   const closeRef = useRef<HTMLButtonElement>(null);
   const modalRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const opener = triggerRef.current;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-      if (event.key === "Tab" && modalRef.current) {
-        const focusable = Array.from(
-          modalRef.current.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]',
-          ),
-        ).filter((element) => element.tabIndex !== -1);
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        }
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      opener?.focus();
-    };
-  }, [open]);
+  useModalFocus(modalRef, open, () => setOpen(false));
 
   return (
     <>
@@ -137,6 +106,8 @@ export function ContactModal({
         ref={triggerRef}
         type="button"
         className={triggerClassName}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         onClick={() => {
           onOpen?.();
           setOpen(true);
@@ -158,6 +129,7 @@ export function ContactModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
+            tabIndex={-1}
           >
             <header className="contact-modal-header">
               <div>
